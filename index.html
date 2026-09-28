@@ -3,17 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>⚡ ระบบจดบันทึกมิเตอร์ไฟฟ้า Electric Meter SR Plant</title>
+<title>⚡ ระบบจดบันทึกมิเตอร์ไฟฟ้า Electric Meter GW Plant</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 
-/* ═══════════════════════════════════════════════════════════
-   REDESIGN LAYER — SESSION 1
-   Design tokens matched to the IMCT Consumption hub (navy + cyan + off-white),
-   with dark-mode parity. Component styles for the new header + sidebar drawer +
-   centered login. All original panel/card/button styles below remain untouched.
-   =========================================================== */
 :root {
   --rd-ink:          #0A1628;
   --rd-ink-2:        #3A4A5F;
@@ -72,8 +68,8 @@
   --rd-shadow-lg:    0 12px 32px rgba(0,0,0,.45);
 }
 
-/* Preload webfonts (light — Inter + Mono + Sarabun) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Sarabun:wght@400;500;600&display=swap');
+/* Fonts are loaded via a single <link> in <head> (see the comment there) —
+   no @import here, which would serialise the fetch behind this stylesheet. */
 
 /* ─── New header ─── */
 .rd-header {
@@ -699,7 +695,7 @@
 
 
 :root {
-  --font-body:'IBM Plex Sans Thai',sans-serif;
+  --font-body:'Sarabun','IBM Plex Sans Thai',sans-serif;
   --font-mono:'IBM Plex Mono',monospace;
   --r-sm:8px;--r-md:12px;--r-lg:16px;--r-xl:20px;
   --shadow-sm:0 1px 3px rgba(0,0,0,.12);
@@ -804,6 +800,16 @@ body{font-family:var(--font-body);font-size:var(--fs-md);line-height:1.5;backgro
 .f-input.kwh-input{font-size:var(--fs-2xl);font-weight:700;text-align:center;color:var(--green);letter-spacing:3px;padding:16px;background:var(--surface-2);border-radius:var(--r-lg);font-family:var(--font-mono);min-height:72px}
 .f-input:disabled{opacity:.5;cursor:not-allowed}
 select.f-input option{background:var(--surface-2)}
+/* Makes clear this is a picker, not just a labelled box — a visible chevron
+   plus an accent border, instead of relying on the browser's own tiny arrow
+   which people were missing entirely on the group-chart dropdown. */
+select.rd-select-hint{
+  appearance:none; -webkit-appearance:none;
+  border-color:var(--accent-border);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300D4FF' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center; background-size:16px;
+  padding-right:38px;
+}
 .f-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .f-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 #entry-section{display:none;position:fixed;top:52px;left:0;right:0;bottom:0;background:var(--bg);z-index:100;padding:12px 12px 90px;overflow-y:auto;-webkit-overflow-scrolling:touch;animation:fadeIn .18s ease-out}
@@ -873,7 +879,11 @@ tr:hover td{background:var(--surface-2)}
 .warn-box{background:var(--orange-dim);border:1px solid rgba(251,146,60,.3);border-radius:var(--r-md);padding:11px 13px;margin-bottom:12px;font-size:var(--fs-sm);color:var(--orange);line-height:1.7}
 .empty{text-align:center;padding:28px;color:var(--text-3)}
 .empty i{font-size:28px;display:block;margin-bottom:6px;font-style:normal}
-.section-empty{padding:14px;text-align:center;color:var(--text-3);font-size:var(--fs-sm)}
+/* Empty/placeholder state inside a chart area. Given a real min-height and
+   centering so it reads as a deliberate "no data" state instead of a blank
+   white panel that looks like the chart failed to load. */
+.section-empty{min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px 14px;text-align:center;color:var(--text-3);font-size:var(--fs-sm)}
+.section-empty::before{content:'📊';font-size:32px;opacity:.4}
 @media(max-width:480px){
   .panel{padding:10px 10px 90px}
   .f-2col,.f-3col{grid-template-columns:1fr;gap:8px}
@@ -908,8 +918,53 @@ tr:hover td{background:var(--surface-2)}
 i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
 .modal-head i svg,.card-title i svg{ width:18px; height:18px; vertical-align:-3px; margin-right:2px; }
 .chart-ctrl{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;background:var(--surface-2);border-radius:10px;border:1px solid var(--border);margin-bottom:8px;align-items:center}
+/* Collapsible filter block — keeps the row of range/period/type buttons from
+   eating the vertical space the chart itself needs. Closed by default so the
+   chart is visible immediately on tab open; the defaults (this month, daily,
+   bar) are almost always what someone wants, so most people never open it. */
+.chart-filters{margin-bottom:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);overflow:hidden}
+.chart-filters>summary{cursor:pointer;list-style:none;padding:9px 12px;font-size:12px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px;user-select:none}
+.chart-filters>summary::-webkit-details-marker{display:none}
+.chart-filters>summary::before{content:'▸';font-size:11px;transition:transform .15s;color:var(--text-3)}
+.chart-filters[open]>summary::before{transform:rotate(90deg)}
+.chart-filters>summary:hover{background:var(--surface-1)}
+.chart-filters .chart-ctrl{margin:0 8px 8px;background:var(--surface-1)}
+.chart-filters .chart-ctrl:first-of-type{margin-top:4px}
+/* Chart subtitle — one line under the card title explaining what the chart
+   shows, so a viewer isn't left guessing how the three charts differ. */
+.chart-desc{font-size:12px;color:var(--text-3);margin:-2px 0 12px;line-height:1.4}
+/* Segmented control — the range presets as one connected bar with the active
+   segment filled, the enterprise-dashboard pattern (Power BI/Grafana). One tap
+   switches range; all options visible at once. */
+.rd-segment{display:flex;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px;margin-bottom:8px}
+.rd-segment button{flex:1;border:none;background:transparent;color:var(--text-2);font-size:13px;font-family:inherit;padding:8px 4px;border-radius:7px;cursor:pointer;transition:background .12s,color .12s;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
+.rd-segment button:hover{color:var(--text-1)}
+.rd-segment button.on{background:var(--accent);color:var(--bg);font-weight:700}
+/* Custom picker dropdown — replaces the <datalist> approach, which on real
+   devices didn't open on tap (you had to type first), fired a redraw on every
+   keystroke (deleting one char reset the chart), and gave no clear open state.
+   This one: tap the field → the full list drops open immediately; an optional
+   search box at the top filters as you type but does NOT touch the chart;
+   picking a row is what commits + redraws. Works identically on mobile and
+   desktop because it's plain DOM, not a native control. */
+.rd-picker{position:relative}
+.rd-picker-btn{width:100%;display:flex;align-items:center;gap:8px;padding:11px 12px;background:var(--surface-2);border:1px solid var(--accent-border);border-radius:10px;color:var(--text-1);font-size:14px;font-family:inherit;cursor:pointer;text-align:left}
+.rd-picker-btn:focus{outline:none;border-color:var(--accent)}
+.rd-picker-btn .rd-picker-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-picker-btn .rd-picker-label.placeholder{color:var(--text-3)}
+.rd-picker-btn .rd-picker-caret{color:var(--accent);font-size:12px;transition:transform .15s}
+.rd-picker.open .rd-picker-caret{transform:rotate(180deg)}
+.rd-picker-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:50;background:var(--surface-1);border:1px solid var(--border-hi);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35);max-height:280px;overflow:hidden;flex-direction:column}
+.rd-picker.open .rd-picker-panel{display:flex}
+.rd-picker-search{margin:8px;padding:9px 11px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text-1);font-size:13px;font-family:inherit}
+.rd-picker-search:focus{outline:none;border-color:var(--accent)}
+.rd-picker-list{overflow-y:auto;overflow-x:hidden}
+.rd-picker-opt{padding:11px 14px;font-size:14px;color:var(--text-1);cursor:pointer;border-top:1px solid var(--border)}
+.rd-picker-opt:hover,.rd-picker-opt.active{background:var(--accent-dim);color:var(--accent)}
+.rd-picker-opt.sel{background:var(--accent-dim);color:var(--accent);font-weight:700}
+.rd-picker-empty{padding:14px;text-align:center;color:var(--text-3);font-size:13px}
 .chart-ctrl-label{font-size:11px;color:var(--text-3);margin-right:4px;white-space:nowrap}
-.ctrl-btn{padding:6px 11px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-3);transition:all .15s;white-space:nowrap;font-family:var(--font-body)}
+.ctrl-btn{padding:6px 11px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-3);transition:all .15s;white-space:nowrap;font-family:var(--font-body);touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
 .ctrl-btn:hover{border-color:var(--border-hi);color:var(--text-2)}
 .ctrl-btn.on{border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.12);color:var(--accent)}
 .ctrl-btn.green{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.12);color:var(--green)}
@@ -920,6 +975,23 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
 .ctrl-nav{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:var(--surface-1);color:var(--text-1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px}
 .ctrl-nav:hover{background:var(--surface-3)}
 .chart-container{min-height:320px;position:relative}
+/* Skeleton loader — shown while a chart's data is being fetched, instead of a
+   bare "กำลังโหลด..." line or an empty box that makes the app feel stalled.
+   Faint animated bars of varying height read instantly as "a chart is coming",
+   which is the perceived-speed trick real dashboards use: the wait feels
+   shorter when the shape of the result is already on screen. Pure CSS, no JS,
+   no layout shift when the real chart replaces it (same min-height). */
+.chart-skeleton{height:320px;min-height:320px;display:flex;align-items:flex-end;justify-content:space-around;gap:6px;padding:24px 12px 40px;box-sizing:border-box}
+.chart-skeleton .sk-bar{flex:1;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--surface-4),var(--surface-3));animation:sk-pulse 1.2s ease-in-out infinite}
+.chart-skeleton .sk-bar:nth-child(1){height:55%;animation-delay:0s}
+.chart-skeleton .sk-bar:nth-child(2){height:80%;animation-delay:.1s}
+.chart-skeleton .sk-bar:nth-child(3){height:40%;animation-delay:.2s}
+.chart-skeleton .sk-bar:nth-child(4){height:70%;animation-delay:.3s}
+.chart-skeleton .sk-bar:nth-child(5){height:90%;animation-delay:.4s}
+.chart-skeleton .sk-bar:nth-child(6){height:50%;animation-delay:.5s}
+.chart-skeleton .sk-bar:nth-child(7){height:65%;animation-delay:.6s}
+.chart-skeleton .sk-bar:nth-child(8){height:35%;animation-delay:.7s}
+@keyframes sk-pulse{0%,100%{opacity:.55}50%{opacity:.9}}
 .apexcharts-tooltip{font-family:var(--font-mono)!important;font-size:12px!important}
 .apexcharts-menu{background:var(--surface-2)!important;border-color:var(--border)!important}
 .apexcharts-menu-item:hover{background:var(--surface-3)!important}
@@ -998,9 +1070,9 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
     </a>
 
     <div class="rd-login-card">
-      <div class="rd-login-eyebrow" id="rd-login-mode-tag">Recorder access</div>
-      <div class="rd-login-title" id="rd-login-title">Sign in to log readings</div>
-      <div class="rd-login-subtitle" id="rd-login-subtitle">กรอกรหัสผ่านทีมจดมิเตอร์เพื่อเริ่มบันทึกค่า</div>
+      <div class="rd-login-eyebrow" id="rd-login-mode-tag">Select Access Mode</div>
+      <div class="rd-login-title" id="rd-login-title">Please select your access level to continue</div>
+      <div class="rd-login-subtitle" id="rd-login-subtitle">กรุณาเลือกประเภทการเข้าใช้งานเพื่อดำเนินการต่อ</div>
 
 <div id="login-choose">
         <div class="rd-role-pick">
@@ -1100,7 +1172,7 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
      the throw aborted logout before it cleared the stored token — the user
      appeared to stay logged in after signing out. Guarded below as well. -->
 <div id="session-expired-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99998;background:#3a2416;border-bottom:1px solid #92400e;color:#fbbf24;padding:9px 14px;font-size:13px;font-weight:600;text-align:center;">
-  ⚠️ เซสชันหมดอายุแล้ว — <button onclick="rdShowRecorder(); document.getElementById('login-gate').style.display='flex';" style="background:#fbbf24;color:#1a1206;border:none;border-radius:6px;padding:4px 10px;font-weight:700;cursor:pointer;font-size:12px;margin-left:4px;">เข้าสู่ระบบใหม่</button>
+  ⚠️ เซสชันหมดอายุแล้ว — <button onclick="reopenLoginForExpiredRole()" style="background:#fbbf24;color:#1a1206;border:none;border-radius:6px;padding:4px 10px;font-weight:700;cursor:pointer;font-size:12px;margin-left:4px;">เข้าสู่ระบบใหม่</button>
 </div>
 
 <!-- ── NEW HEADER + SIDEBAR DRAWER ── -->
@@ -1115,7 +1187,7 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
           <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/>
         </svg>
       </div>
-      <div class="rd-brand-title" id="hdr-title">Electric Meter<span class="rd-brand-code" id="rd-brand-code">SR</span></div>
+      <div class="rd-brand-title" id="hdr-title">Electric Meter<span class="rd-brand-code" id="rd-brand-code">GW</span></div>
     </div>
   </div>
 
@@ -1124,6 +1196,7 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
     <button class="rd-icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
+    <span id="rd-last-sync" title="เวลาที่ข้อมูลอัปเดตล่าสุด" style="font-family:var(--rd-font-mono);font-size:11px;color:var(--rd-ink-3);white-space:nowrap;margin-right:2px"></span>
     <div class="rd-status-dot" id="sync-dot" title="Sync status"></div>
     <span id="hdr-small" style="display:none"></span>
   </div>
@@ -1153,6 +1226,10 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
       Home
     </a>
+    <a class="rd-drawer-item" href="https://imctconsumption.github.io/Water-Meter-GW/" title="สลับไปแอปมิเตอร์น้ำ GW">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69s5 5.5 5 9.31a5 5 0 0 1-10 0c0-3.81 5-9.31 5-9.31Z"/></svg>
+      สลับไปมิเตอร์น้ำ <span style="margin-left:auto;font-family:var(--rd-font-th);font-size:11px;color:var(--rd-ink-3)">Water</span>
+    </a>
 
     <div class="rd-drawer-section">Workspace</div>
     <button class="rd-drawer-item active rd-recorder-item" data-rd-tab="entry" onclick="rdGoTab('entry')">
@@ -1170,10 +1247,6 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
     <button class="rd-drawer-item rd-admin-item rd-viewer-item" data-rd-tab="summary" onclick="rdGoTab('summary')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></svg>
       Summary <span style="margin-left:auto;font-family:var(--rd-font-th);font-size:11px;color:var(--rd-ink-3)">สรุป</span>
-    </button>
-    <button class="rd-drawer-item rd-admin-item rd-viewer-item" data-rd-tab="cost" onclick="rdGoTab('cost')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      Cost <span style="margin-left:auto;font-family:var(--rd-font-th);font-size:11px;color:var(--rd-ink-3)">ค่าไฟ</span>
     </button>
     <button class="rd-drawer-item rd-admin-item" data-rd-tab="qr" onclick="rdGoTab('qr')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h.01M17 21h4v-4"/></svg>
@@ -1246,7 +1319,7 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
     <div id="entry-section">
       <button class="back-btn" onclick="backToList()">← กลับ</button>
       <div class="sub-banner">
-        <div class="sb-icon">🚰</div>
+        <div class="sb-icon">⚡</div>
         <div>
           <span class="sb-label">กำลังบันทึก</span>
           <div class="sb-name" id="banner-name">—</div>
@@ -1395,45 +1468,58 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
 
   <div class="panel" id="panel-chart">
     <div class="card">
-      <div class="card-title">กราฟเทียบการใช้ไฟฟ้าแต่ละกลุ่ม</div>
-      <div class="info-box" style="margin-bottom:10px">👇 เลือกโรง/กลุ่มที่ต้องการดูจากรายการด้านล่าง</div>
+      <div class="card-title">กราฟเทียบการใช้ไฟฟ้าแต่ละกลุ่ม
+        <button class="btn btn-ghost btn-sm" style="text-transform:none;letter-spacing:0;padding:3px 8px;min-height:auto" id="cmp-refresh-btn" onclick="refreshCmpChart()" title="ดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์">🔄</button>
+      </div>
+      <div class="chart-desc">ภาพรวมการใช้พลังงานของแต่ละกลุ่ม เทียบตามช่วงเวลา</div>
       <div class="f-row">
         <label class="f-label">🏭 เลือกโรง / กลุ่ม</label>
-        <select class="f-input" id="cmp-group" onchange="renderCmpChart()"></select>
+        <div class="rd-picker" id="cmp-group-picker">
+          <button type="button" class="rd-picker-btn" onclick="togglePicker('cmp-group-picker')">
+            <span class="rd-picker-label placeholder" id="cmp-group-label">เลือกกลุ่ม...</span>
+            <span class="rd-picker-caret">▼</span>
+          </button>
+          <div class="rd-picker-panel">
+            <input class="rd-picker-search" id="cmp-group-psearch" placeholder="🔍 ค้นหากลุ่ม..." autocomplete="off" oninput="filterPicker('cmp-group-picker')">
+            <div class="rd-picker-list" id="cmp-group-plist"></div>
+          </div>
+        </div>
+        <select class="f-input rd-select-hint" id="cmp-group" onchange="renderCmpChartDebounced()" style="display:none"></select>
       </div>
-      <div class="chart-ctrl">
-        <span class="chart-ctrl-label">ช่วงเร็ว:</span>
-        <button class="ctrl-btn yellow" onclick="setCmpQuick('7d')">7 วัน</button>
-        <button class="ctrl-btn yellow" onclick="setCmpQuick('30d')">30 วัน</button>
-        <button class="ctrl-btn yellow" onclick="setCmpQuick('thisM')">เดือนนี้</button>
-        <button class="ctrl-btn yellow" onclick="setCmpQuick('lastM')">เดือนก่อน</button>
-        <button class="ctrl-btn yellow" onclick="setCmpQuick('3m')">3 เดือน</button>
-        <button class="ctrl-btn yellow" onclick="setCmpQuick('all')">ทั้งหมด</button>
+      <div class="rd-segment" id="cmp-segment">
+        <button data-slot="0" class="on" onclick="setCmpQuickSeg(0)">เดือนนี้</button>
+        <button data-slot="1" onclick="setCmpQuickSeg(1)">เดือนก่อน</button>
+        <button data-slot="2" onclick="setCmpQuickSeg(2)">3 เดือน</button>
       </div>
+      <details class="chart-filters"><summary>ตัวกรอง (ช่วงวัน · มุมมอง · รูปแบบ)</summary>
       <div class="chart-ctrl">
         <span class="chart-ctrl-label">จาก:</span>
-        <input class="ctrl-date" type="date" id="cmp-from" onchange="renderCmpChart()">
+        <input class="ctrl-date" type="date" id="cmp-from" onchange="renderCmpChartDebounced()">
         <span class="chart-ctrl-label">ถึง:</span>
-        <input class="ctrl-date" type="date" id="cmp-to" onchange="renderCmpChart()">
+        <input class="ctrl-date" type="date" id="cmp-to" onchange="renderCmpChartDebounced()">
       </div>
       <div class="chart-ctrl">
         <span class="chart-ctrl-label">มุมมอง:</span>
         <button class="ctrl-btn green" id="cmp-p-day" onclick="setCmpPeriod('day')">รายวัน</button>
         <button class="ctrl-btn" id="cmp-p-month" onclick="setCmpPeriod('month')">รายเดือน</button>
-        <button class="ctrl-btn" id="cmp-p-year" onclick="setCmpPeriod('year')">รายปี</button>
         <div class="ctrl-sep"></div>
         <button class="ctrl-btn on" id="cmp-avg" onclick="toggleCmpOpt('avg')">เส้นเฉลี่ย</button>
+        <button class="ctrl-btn on" id="cmp-hol" onclick="toggleCmpOpt('hol')">แยกสีวันหยุด</button>
         <div class="ctrl-sep"></div>
         <button class="ctrl-btn green" id="cmp-t-bar" onclick="setCmpType('bar')">แท่ง</button>
         <button class="ctrl-btn" id="cmp-t-line" onclick="setCmpType('line')">เส้น</button>
       </div>
+      </details>
       <div class="chart-container" id="cmp-chart-el"></div>
       <div id="cmp-chart-summary" style="margin-top:8px"></div>
     </div>
   
 
         <div class="card">
-      <div class="card-title">เทียบการใช้ไฟฟ้ากลุ่มหลัก</div>
+      <div class="card-title">เทียบการใช้ไฟฟ้ากลุ่มหลัก
+        <button class="btn btn-ghost btn-sm" style="text-transform:none;letter-spacing:0;padding:3px 8px;min-height:auto" id="g9-refresh-btn" onclick="refreshG9Chart()" title="ดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์">🔄</button>
+      </div>
+      <details class="chart-filters"><summary>ตัวกรอง (มุมมอง · ช่วง · เรียง)</summary>
       <div class="chart-ctrl">
         <span class="chart-ctrl-label">มุมมอง:</span>
         <button class="ctrl-btn green" id="g9-p-day" onclick="setG9Period('day')">รายวัน</button>
@@ -1442,9 +1528,9 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
       </div>
       <div class="chart-ctrl">
         <button class="ctrl-nav" onclick="navG9(-1)">◀</button>
-        <input class="ctrl-date" type="date" id="g9-date" onchange="renderG9Chart()">
-        <input class="ctrl-date" type="month" id="g9-month" onchange="renderG9Chart()" style="display:none">
-        <select class="ctrl-date" id="g9-year" onchange="renderG9Chart()" style="display:none"></select>
+        <input class="ctrl-date" type="date" id="g9-date" onchange="renderG9ChartDebounced()">
+        <input class="ctrl-date" type="month" id="g9-month" onchange="renderG9ChartDebounced()" style="display:none">
+        <select class="ctrl-date" id="g9-year" onchange="renderG9ChartDebounced()" style="display:none"></select>
         <button class="ctrl-nav" onclick="navG9(1)">▶</button>
         <span style="font-size:11px;color:var(--accent);font-weight:700" id="g9-label"></span>
       </div>
@@ -1456,25 +1542,36 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
         <div class="ctrl-sep"></div>
         <button class="ctrl-btn" id="g9-pct" onclick="toggleG9Pct()">แสดง %</button>
       </div>
+      </details>
       <div class="chart-container" id="g9-chart-el"></div>
       <div id="g9-chart-summary" style="margin-top:8px"></div>
     </div>
 
     <div class="card">
-      <div class="card-title"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 3-4 3 3 4-6"/></svg></i> การใช้ไฟฟ้ารายวัน (kWh)</div>
+      <div class="card-title"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 3-4 3 3 4-6"/></svg></i> กราฟรายมิเตอร์
+        <button class="btn btn-ghost btn-sm" style="text-transform:none;letter-spacing:0;padding:3px 8px;min-height:auto" id="sub-refresh-btn" onclick="refreshSubChart()" title="ดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์">🔄</button>
+      </div>
+      <div class="chart-desc">เจาะจงมิเตอร์ตัวเดียว ดูการใช้ตามช่วงเวลา</div>
       <div class="f-row">
-        <label class="f-label">เลือก Meter</label>
-        <select class="f-input" id="chart-sub" onchange="renderSubChart()"><option value="">เลือก Sub...</option></select>
+        <label class="f-label">🔌 เลือกมิเตอร์</label>
+        <div class="rd-picker" id="chart-sub-picker">
+          <button type="button" class="rd-picker-btn" onclick="togglePicker('chart-sub-picker')">
+            <span class="rd-picker-label placeholder" id="chart-sub-label">เลือกมิเตอร์...</span>
+            <span class="rd-picker-caret">▼</span>
+          </button>
+          <div class="rd-picker-panel">
+            <input class="rd-picker-search" id="chart-sub-psearch" placeholder="🔍 ค้นหามิเตอร์..." autocomplete="off" oninput="filterPicker('chart-sub-picker')">
+            <div class="rd-picker-list" id="chart-sub-plist"></div>
+          </div>
+        </div>
+        <select class="f-input" id="chart-sub" onchange="onSubChartMeterChange()" style="display:none"><option value="">เลือก Sub...</option></select>
       </div>
-      <div class="chart-ctrl">
-        <span class="chart-ctrl-label">ช่วงเร็ว:</span>
-        <button class="ctrl-btn yellow" onclick="setSubQuick('7d')">7 วัน</button>
-        <button class="ctrl-btn yellow" onclick="setSubQuick('30d')">30 วัน</button>
-        <button class="ctrl-btn yellow" onclick="setSubQuick('thisM')">เดือนนี้</button>
-        <button class="ctrl-btn yellow" onclick="setSubQuick('lastM')">เดือนก่อน</button>
-        <button class="ctrl-btn yellow" onclick="setSubQuick('3m')">3 เดือน</button>
-        <button class="ctrl-btn yellow" onclick="setSubQuick('all')">ทั้งหมด</button>
+      <div class="rd-segment" id="sub-segment">
+        <button data-slot="0" class="on" onclick="setSubQuickSeg(0)">เดือนนี้</button>
+        <button data-slot="1" onclick="setSubQuickSeg(1)">เดือนก่อน</button>
+        <button data-slot="2" onclick="setSubQuickSeg(2)">3 เดือน</button>
       </div>
+      <details class="chart-filters"><summary>ตัวกรอง (ช่วงวัน · มุมมอง · รูปแบบ)</summary>
       <div class="chart-ctrl">
         <span class="chart-ctrl-label">จาก:</span>
         <input class="ctrl-date" type="date" id="sub-from" onchange="renderSubChart()">
@@ -1485,7 +1582,6 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
         <span class="chart-ctrl-label">มุมมอง:</span>
         <button class="ctrl-btn green" id="sub-p-day" onclick="setSubPeriod('day')">รายวัน</button>
         <button class="ctrl-btn" id="sub-p-month" onclick="setSubPeriod('month')">รายเดือน</button>
-        <button class="ctrl-btn" id="sub-p-year" onclick="setSubPeriod('year')">รายปี</button>
         <div class="ctrl-sep"></div>
         <button class="ctrl-btn on" id="sub-avg" onclick="toggleSubOpt('avg')">เส้นเฉลี่ย</button>
         <button class="ctrl-btn on" id="sub-hol" onclick="toggleSubOpt('hol')">แยกสีวันหยุด</button>
@@ -1493,6 +1589,7 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
         <button class="ctrl-btn green" id="sub-t-bar" onclick="setSubType('bar')">แท่ง</button>
         <button class="ctrl-btn" id="sub-t-line" onclick="setSubType('line')">เส้น</button>
       </div>
+      </details>
       <div class="chart-container" id="sub-chart-el"></div>
       <div id="sub-chart-summary" style="margin-top:8px"></div>
     </div>
@@ -1563,11 +1660,11 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
 
     <div id="cost-body"><div class="section-empty">เลือกเดือนแล้วกดคำนวณ</div></div>
 
-    <div class="card">
+    <div class="card" id="tariff-card">
       <div class="card-title">⚙️ อัตราค่าไฟ</div>
       <div class="info-box" style="margin-bottom:12px">
         กรอกตามใบแจ้งหนี้ล่าสุด — Ft เปลี่ยนทุกงวด ควรอัปเดตก่อนคำนวณ<br>
-        <small style="color:var(--rd-ink-3)">เก็บในเครื่องนี้เท่านั้น ไม่ได้ส่งขึ้น Sheet</small>
+        <small style="color:var(--rd-ink-3)">บันทึกลงชีท _TARIFFS — ใช้ร่วมกันทุกเครื่อง</small>
       </div>
       <div id="tariff-forms"></div>
       <div class="btn-row">
@@ -1620,8 +1717,8 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
     <div class="card">
       <div class="card-title">➕ เพิ่ม Meter</div>
       <div class="f-3col">
-        <div class="f-row"><label class="f-label">Meter ID</label><input class="f-input" id="new-id" placeholder="WM-59"></div>
-        <div class="f-row"><label class="f-label">ชื่อ</label><input class="f-input" id="new-name" placeholder="เช่น ประปาเข้า...(คำอธิบาย Meter)"></div>
+        <div class="f-row"><label class="f-label">Meter ID</label><input class="f-input" id="new-id" placeholder="SUB-99"></div>
+        <div class="f-row"><label class="f-label">ชื่อ</label><input class="f-input" id="new-name" placeholder="เช่น Sub No.5 — Compressor"></div>
         <div class="f-row">
           <label class="f-label">ทศนิยม</label>
           <select class="f-input" id="new-decimal">
@@ -1696,7 +1793,7 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
     </div>
     <div class="f-row">
       <label class="f-label">ชื่อ Meter</label>
-      <input class="f-input" id="esub-name" placeholder="เช่น ประปาเข้าห้องน้ำ Body">
+      <input class="f-input" id="esub-name" placeholder="เช่น Sub No.5 — Compressor">
     </div>
     <div class="f-row">
       <label class="f-label">Zone / พื้นที่</label>
@@ -1727,7 +1824,7 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
 
 <script>
 /* ════════════════════════════════════════════════════════════
-   WATER METER LOGGER V2 — Frontend
+   ELECTRIC METER LOGGER — Frontend
    Aug 2026 patch: ports the full session-token auth + scoped-read
    architecture from the Electric (Substation) sister app.
    ════════════════════════════════════════════════════════════ */
@@ -1738,7 +1835,6 @@ i svg{ width:1em; height:1em; display:inline-block; vertical-align:-0.12em; }
    ═══════════════════════════════════════════════════════════ */
 const APP_ID      = 'elec-gw';   // must equal doGet's `app`; verified on load
 const APP_NS      = 'elecgw';    // localStorage namespace — UNIQUE per app
-const APP_VERSION = '1.0.0';
 const SITE_NAME   = 'Electric Meter';
 const SITE_CODE   = 'GW';
 const UNIT        = 'kWh';
@@ -1750,7 +1846,7 @@ const ABNORMAL_MULTIPLIER = 5;
 const SESSION_TTL_MS = 4 * 60 * 60 * 1000; // matches SESSION_TTL_SECONDS in Code.gs
 
 /* ── localStorage namespacing ──
-   All four apps share the ramesimct.github.io origin, so localStorage is
+   All four apps are served from one GitHub Pages origin, so localStorage is
    shared. Keys are prefixed per-app (APP_NS) to prevent cross-app collision.
    `theme` is intentionally left un-prefixed so the light/dark choice is shared. */
 function nsKey(k){ return APP_NS + ':' + k; }
@@ -1769,7 +1865,6 @@ function lsRemove(k){ localStorage.removeItem(nsKey(k)); }
 let reportGroups = Array.isArray(lsGet('reportGroups')) ? lsGet('reportGroups') : [];
 
 function groupByKey(key){ return reportGroups.find(g => g.key === key) || null; }
-function getGroupIds(key){ const g = groupByKey(key); return g ? (g.meters || []) : []; }
 function zoneName(zoneKey){ const g = groupByKey(zoneKey); return (g && g.name) ? g.name : (zoneKey || 'อื่นๆ'); }
 function zoneIcon(zoneKey){ const g = groupByKey(zoneKey); return (g && g.icon) ? g.icon : '📦'; }
 
@@ -1831,18 +1926,39 @@ function fmtUsedCell(used, meterId){
   return fmtNum(used, meterId);
 }
 
+/* People walking the plant read a name off a panel, never a meter ID — the
+   table's first column showing "SUB-05" instead of "Sub No.5" meant every
+   lookup required a mental translation nobody actually does. Looks up the
+   CURRENT name from `subs` (not the meterName saved on the record itself),
+   so a rename in Settings is reflected on old rows too, not just new ones. */
+function meterNameById(meterId){
+  const sub = subById(meterId);
+  return sub ? sub.name : (meterId || '—');
+}
+/* O(1) meter lookup for the hot paths. subs.find() is a linear scan, and the
+   report/chart aggregation calls it several times per (meter × day) cell —
+   a year view over ~200 meters is tens of millions of comparisons, which
+   froze the main thread for seconds on a phone. The index is self-validating
+   rather than explicitly invalidated, so no call site that changes `subs` can
+   forget to reset it: reassignment or a length change (push/splice) rebuilds
+   it, and a hit whose slot no longer holds the same object (saveEditSub
+   replaces subs[i]) rebuilds it too. First match wins, same as find(). */
+let _subIdx = null, _subIdxSrc = null, _subIdxLen = -1;
+function _rebuildSubIdx(){
+  _subIdx = new Map();
+  subs.forEach((s, i) => { if(s && !_subIdx.has(s.id)) _subIdx.set(s.id, { i, s }); });
+  _subIdxSrc = subs; _subIdxLen = subs.length;
+}
+function subById(id){
+  if(_subIdxSrc !== subs || _subIdxLen !== subs.length) _rebuildSubIdx();
+  let e = _subIdx.get(id);
+  if(e && subs[e.i] !== e.s){ _rebuildSubIdx(); e = _subIdx.get(id); }
+  return e ? e.s : undefined;
+}
 function fmtNum(val, meterId){
-  const sub = subs.find(s => s.id === meterId);
+  const sub = subById(meterId);
   const dec = sub && sub.decimal !== undefined ? sub.decimal : 0;
   return parseFloat(val || 0).toFixed(dec);
-}
-function fmtChartDate(dateStr){
-  if(!dateStr) return '—';
-  let obj;
-  if(String(dateStr).includes('T')) obj = new Date(dateStr);
-  else { const [y,m,dy] = String(dateStr).split('-'); obj = new Date(y, m-1, dy); }
-  if(isNaN(obj.getTime())) return String(dateStr);
-  return `${String(obj.getDate()).padStart(2,'0')}/${String(obj.getMonth()+1).padStart(2,'0')}`;
 }
 /* Local-date helper. toISOString() formats in UTC, so using it to derive
    "today" or a date-range boundary silently shifts the answer back a day for
@@ -1868,14 +1984,40 @@ function setNow(){
   if(ed) ed.value = n.getFullYear() + '-' + pad(n.getMonth()+1) + '-' + pad(n.getDate());
   if(et) et.value = pad(n.getHours()) + ':' + pad(n.getMinutes());
 }
-function getLastKwh(meterId){
-  const sorted = records.filter(r => r.meterId === meterId)
-    .sort((a,b) => (`${b.date} ${b.time||'00:00'}`).localeCompare(`${a.date} ${a.time||'00:00'}`));
-  return sorted.length ? parseFloat(sorted[0].kwh) || 0 : null;
-}
+/* Per-meter chart data store, keyed by meterId. Populated by
+   loadSubChartRecords() from the getMeterRecords action, which reads one
+   meter's rows from a small stable server cache instead of scanning the whole
+   sheet (getRawRecords). getSubRecs prefers this store when it holds the
+   requested meter, falling back to the global `records` array otherwise (e.g.
+   an admin who already loaded everything, or before the per-meter fetch
+   returns). Records here are run through computeUsed on arrival so `used`
+   carries the same zero-guard as everywhere else. */
+let subChartRecords = {};   // meterId -> computed records array
+
 function getSubRecs(meterId){
+  const cached = subChartRecords[meterId];
+  if(cached){
+    // Already sorted by _getMeterRecordChain server-side (and computeUsed
+    // preserves order), so no re-sort here — this is the normal chart path.
+    return cached.filter(r => r.meterId === meterId);
+  }
+  // Fallback to the global records array (e.g. before the per-meter fetch
+  // returns, or an admin who loaded everything). That array is NOT guaranteed
+  // sorted, so it still needs sorting.
   return records.filter(r => r.meterId === meterId)
     .sort((a,b) => (`${a.date} ${a.time||'00:00'}`).localeCompare(`${b.date} ${b.time||'00:00'}`));
+}
+
+/* Fetches one meter's records via the lightweight per-meter action and stores
+   the computed result. Returns the array. Used both on meter-select and by the
+   refresh button — the whole point is that this path never touches the
+   full-sheet getRawRecords. */
+async function loadSubChartRecords(meterId){
+  if(!meterId) return [];
+  const res = await apiPostAuthed({ action:'getMeterRecords', meterId });
+  const raw = (res && res.records) || [];
+  subChartRecords[meterId] = computeUsed(raw);
+  return subChartRecords[meterId];
 }
 
 /* ════════════ SESSION PERSISTENCE ════════════ */
@@ -1912,7 +2054,19 @@ function restoreSession(){
   }
   return true;
 }
+/* The session-expired banner used to always open the recorder form, so an
+   admin or viewer whose session ran out had to back out and pick their role
+   again. Remember who was signed in and reopen that role's form. */
+let _expiredRole = null;
+function reopenLoginForExpiredRole(){
+  const role = _expiredRole || appMode;
+  if(role === 'admin') rdShowAdmin();
+  else if(role === 'viewer') rdShowViewer();
+  else rdShowRecorder();
+  openLoginGate();
+}
 function showSessionExpiredBanner(){
+  _expiredRole = appMode;
   const el = document.getElementById('session-expired-banner');
   if(el) el.style.display = 'block';
   setWriteLock(true);      // an expired session must not be able to write
@@ -1923,10 +2077,9 @@ function hideSessionExpiredBanner(){
   setWriteLock(false);
 }
 
-/* Disable every control that writes data while the session is invalid.
-   The banner alone was only a label — the save/edit/delete buttons stayed
-   live, so an expired session could still modify the sheet for as long as
-   the server-side token happened to outlast the client's own timer. */
+/* Disable the recorder's save buttons while the session is invalid. The
+   banner alone was only a label. Admin edit/delete in the Data tab are not
+   locked here; the server rejects them with the expired token. */
 function setWriteLock(locked){
   const ids = ['save-btn','unable-btn'];
   ids.forEach(id => {
@@ -1936,7 +2089,6 @@ function setWriteLock(locked){
       el.title = locked ? 'เซสชันหมดอายุ — กรุณาเข้าสู่ระบบใหม่' : '';
     }
   });
-  document.querySelectorAll('[data-write-action]').forEach(el => { el.disabled = locked; });
   window.__writeLocked = !!locked;
 }
 function checkSessionExpiry(){
@@ -1971,9 +2123,7 @@ function logout(){
   hideSessionExpiredBanner();
   // Land on the three-way picker so recorder/viewer/admin are an explicit
   // choice, not a default someone has to notice a small link to get past.
-  const gate = document.getElementById('login-gate');
-  gate.style.display = 'flex';
-  gate.style.opacity = '1';
+  openLoginGate();
   backToChoose();
   const errA = document.getElementById('login-err');
   if(errA) errA.style.display = 'none';
@@ -1985,12 +2135,17 @@ function showRecorderLogin(fromExpiredBanner){
   document.getElementById('login-admin').style.display    = 'none';
   document.getElementById('login-viewer').style.display   = 'none';
   document.getElementById('login-recorder').style.display = 'block';
-  if(fromExpiredBanner){
-    const gate = document.getElementById('login-gate');
-    gate.style.display = 'flex'; gate.style.opacity = '1';
-  }
+  if(fromExpiredBanner) openLoginGate();
   setTimeout(() => document.getElementById('recorder-pass')?.focus(), 100);
 }
+/* Device token for the login lockout (see _deviceNonceIfValid in Code.gs).
+   Stored per username in this app's localStorage namespace and NOT cleared on
+   logout: it identifies this device as one that has signed in before, which
+   keeps it out of the shared lockout an outside guesser can trigger. */
+function _devTokKey(u){ return 'devtok:' + String(u || '').toLowerCase(); }
+function getDeviceToken(u){ try { return lsGetRaw(_devTokKey(u)) || ''; } catch(e){ return ''; } }
+function saveDeviceToken(u, t){ if(!t) return; try { lsSetRaw(_devTokKey(u), t); } catch(e){ /* storage full — stays untrusted */ } }
+
 async function handleRecorderLogin(){
   const passVal  = document.getElementById('recorder-pass').value.trim();
   const errDiv   = document.getElementById('recorder-login-err');
@@ -2000,21 +2155,41 @@ async function handleRecorderLogin(){
   const originalHTML = loginBtn.innerHTML;
   loginBtn.disabled = true; loginBtn.innerHTML = '⏳ กำลังตรวจสอบ...';
   try{
-    const res = await apiPost({ action:'login', username:'recorder', password:passVal });
+    const res = await apiPost({ action:'login', username:'recorder', password:passVal, deviceToken: getDeviceToken('recorder'), meterIds: subs.map(s => s.id) });
     if(res && res.success){
+      saveDeviceToken('recorder', res.deviceToken);
       currentUser = res.name || 'ทีมจดมิเตอร์';
       sessionToken = res.token || null;
       persistSession(res.token, res.role || 'recorder', currentUser);
       applyAppMode('basic');
-      lsSetRaw('loginMode','basic');
       document.getElementById('recorder-pass').value = '';
       closeLoginGate();
-      await loadMeterStatus();
+      // The login response already carries meter status (backend folded it in),
+      // so apply it directly instead of a second getMeterStatus round-trip.
+      // Falls back to loadMeterStatus only if the payload wasn't included.
+      if(res.status){
+        meterStatus = res.status;
+        if(res.today) meterStatusToday = res.today;
+        if(res.date)  loggingDayLabel = res.date;
+      } else {
+        await loadMeterStatus();
+      }
+      // Queue MUST start regardless of which status path ran above — it was
+      // accidentally only inside the res.status branch, so when the backend
+      // didn't fold status in (old deploy, viewer, or an error) the send queue
+      // never auto-flushed and readings piled up locally then vanished on close.
+      if(sessionToken) loadBulkRecent();
+      loadQueue(); startQueueTimer(); flushQueue();
       if(pendingQrSub){
         goTab('entry');
         const found = subs.find(s => s.id === pendingQrSub);
         if(found){ await selectSub(found.id); toast('📍 เปิด ' + found.id + ' จาก QR','ok'); }
         pendingQrSub = null;
+      } else {
+        // Always land a recorder on the entry tab. Without this, logging out of
+        // a viewer/admin session (last tab = chart) and back in as recorder
+        // left the chart tab showing instead of the data-entry screen.
+        goTab('entry');
       }
       renderAll();
     } else {
@@ -2063,13 +2238,13 @@ async function handleViewerLogin(){
   const originalHTML = loginBtn.innerHTML;
   loginBtn.disabled = true; loginBtn.innerHTML = '⏳ กำลังตรวจสอบ...';
   try{
-    const res = await apiPost({ action:'login', username:'viewer', password:passVal });
+    const res = await apiPost({ action:'login', username:'viewer', password:passVal, deviceToken: getDeviceToken('viewer') });
     if(res && res.success && res.role === 'viewer'){
+      saveDeviceToken('viewer', res.deviceToken);
       currentUser = res.name || 'ผู้ดูรายงาน';
       sessionToken = res.token || null;
       persistSession(res.token, 'viewer', currentUser);
       applyAppMode('viewer');
-      lsSetRaw('loginMode','viewer');
       document.getElementById('viewer-pass').value = '';
       closeLoginGate();
       goTab('chart');   // the report views are what this role signs in for
@@ -2099,8 +2274,9 @@ async function handleLogin(){
   const originalHTML = loginBtn.innerHTML;
   loginBtn.disabled  = true; loginBtn.innerHTML = '⏳ กำลังตรวจสอบ...';
   try{
-    const res = await apiPost({ action:'login', username:userVal, password:passVal });
+    const res = await apiPost({ action:'login', username:userVal, password:passVal, deviceToken: getDeviceToken(userVal) });
     if(res && res.success && res.role === 'admin'){
+      saveDeviceToken(userVal, res.deviceToken);
       currentUser = res.name || userVal;
       sessionToken = res.token || null;
       persistSession(res.token, 'admin', currentUser);
@@ -2129,11 +2305,22 @@ function shakeInputs(){
     setTimeout(() => { el.style.animation = ''; }, 400);
   });
 }
+/* Closing fades the gate out and hides it 300 ms later. Anything that reopens
+   it inside that window (logout, an expired session) must cancel the pending
+   hide, or the gate vanishes right after it was shown — and a reopen that set
+   only display would stay stuck at opacity 0, invisible. */
+let _gateHideTimer = null;
+function openLoginGate(){
+  clearTimeout(_gateHideTimer); _gateHideTimer = null;
+  const gate = document.getElementById('login-gate');
+  gate.style.display = 'flex'; gate.style.opacity = '1';
+}
 function closeLoginGate(){
   const gate = document.getElementById('login-gate');
   gate.style.transition = 'opacity 0.3s';
   gate.style.opacity = '0';
-  setTimeout(() => { gate.style.display = 'none'; gate.style.opacity = '1'; }, 300);
+  clearTimeout(_gateHideTimer);
+  _gateHideTimer = setTimeout(() => { _gateHideTimer = null; gate.style.display = 'none'; gate.style.opacity = '1'; }, 300);
 }
 function applyAppMode(mode){
   appMode = mode;
@@ -2219,7 +2406,14 @@ const SLOW_ACTIONS = {
   getMeterStatus:      30000,
   getMonthlySummary:   30000,
   getAvailableMonths:  20000,
-  flushCaches:         30000
+  flushCaches:         30000,
+  /* Saves wait for the script lock (withLock: up to 15 s) before doing their
+     own work. At the 12 s default the client gave up while the server was
+     still waiting, then retried — queueing a second copy behind the first on
+     the same lock. The queue is already durable, so a longer wait costs
+     nothing; the server de-duplicates by id either way. */
+  saveRecordsBatch:    30000,
+  saveRecord:          30000
 };
 
 /* Apps Script runs one execution at a time per script. Issuing several heavy
@@ -2228,33 +2422,110 @@ const SLOW_ACTIONS = {
    single-use /exec redirect target 404s by the time the browser follows it.
    Everything goes through one chain so each call gets its full budget for its
    own work rather than spending it queued behind someone else's. */
-let _apiChain = Promise.resolve();
-function apiPost(body, retries = 2){
-  const run = () => _apiPostNow(body, retries);
-  const queued = _apiChain.then(run, run);
-  _apiChain = queued.catch(() => {});   // a failure must not break the chain
-  return queued;
+/* Two lanes, one worker: calls still run strictly one at a time (above), but
+   work the person initiated (login, saving readings, charts) always goes ahead
+   of background prefetches that haven't started yet. Before, one FIFO chain
+   let a slow background getRecentRecordsAll (45 s × 3 attempts ≈ 2+ minutes)
+   sit in front of a queued save or login. Background calls also get no
+   retries: they are optional, and every caller already has a fallback. An
+   in-flight call is never aborted — the server would keep executing it anyway. */
+const _apiFg = [], _apiBg = [];
+let _apiBusy = false;
+function apiPost(body, retries = 2, opts){
+  const background = !!(opts && opts.background);
+  return new Promise((resolve, reject) => {
+    (background ? _apiBg : _apiFg).push({ body, retries: background ? 0 : retries, resolve, reject });
+    _apiPump();
+  });
+}
+async function _apiPump(){
+  if(_apiBusy) return;
+  _apiBusy = true;
+  try{
+    while(_apiFg.length || _apiBg.length){
+      const job = _apiFg.length ? _apiFg.shift() : _apiBg.shift();
+      try { job.resolve(await _apiPostNow(job.body, job.retries)); }
+      catch(e){ job.reject(e); }   // a failure must not stop the worker
+    }
+  } finally { _apiBusy = false; }
 }
 
-async function _apiPostNow(body, retries = 2){
+async function _apiPostNow(body, retries = 2) {
   const timeoutMs = (body && SLOW_ACTIONS[body.action]) || 12000;
-  for(let attempt = 0; attempt <= retries; attempt++){
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
     const ctrl = new AbortController();
-    const tid  = setTimeout(() => ctrl.abort(), timeoutMs);
-    try{
-      const res  = await fetch(API_URL, { method:'POST', body:JSON.stringify(body), signal:ctrl.signal });
+
+    let timedOut = false;
+
+    const tid = setTimeout(() => {
+      timedOut = true;
+      ctrl.abort();
+    }, timeoutMs);
+
+    try {
+      console.log(
+        `🌐 API ${body?.action} attempt ${attempt + 1}/${retries + 1} ` +
+        `(timeout ${timeoutMs}ms)`
+      );
+
+      const start = performance.now();
+
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify(body),
+        signal: ctrl.signal
+        // NO custom headers here. Any header such as Content-Type:
+        // application/json turns this into a non-simple CORS request, the
+        // browser sends an OPTIONS preflight first, and Apps Script cannot
+        // answer OPTIONS — every POST then fails with "Failed to fetch".
+        // A plain string body is sent as text/plain, which Apps Script reads
+        // fine via e.postData.contents.
+      });
+
+      const elapsed = Math.round(performance.now() - start);
+
       clearTimeout(tid);
-      if(!res.ok) throw new Error('HTTP ' + res.status);
+
+      if (!res.ok) {
+        throw new Error('HTTP ' + res.status);
+      }
+
       const data = await res.json();
-      if(data.status === 'error') throw new Error(data.message || 'Server error');
+
+      if (data.status === 'error') {
+        throw new Error(data.message || 'Server error');
+      }
+
+      console.log(
+        `✅ API ${body?.action} completed in ${elapsed}ms`
+      );
+
       return data;
-    }catch(e){
+
+    } catch (e) {
       clearTimeout(tid);
-      if(attempt === retries) throw e;
-      // Log retries: previously silent, which made a 404 in the console
-      // impossible to tell apart from a call that recovered on attempt 2.
-      console.warn('⚠️ apiPost[' + (body && body.action) + '] attempt ' + (attempt+1) + ' failed (' + e.message + ') — retrying...');
-      await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
+
+      const error = timedOut
+        ? new Error(`Request timeout after ${timeoutMs}ms`)
+        : e;
+
+      if (attempt === retries) {
+        console.error(
+          `❌ apiPost[${body?.action}] failed after ${attempt + 1} attempts:`,
+          error
+        );
+        throw error;
+      }
+
+      console.warn(
+        `⚠️ apiPost[${body?.action}] attempt ${attempt + 1} failed ` +
+        `(${error.message}) — retrying...`
+      );
+
+      await new Promise(r =>
+        setTimeout(r, 600 * (attempt + 1))
+      );
     }
   }
 }
@@ -2267,7 +2538,7 @@ async function _apiPostNow(body, retries = 2){
    Only work the person actually initiated is allowed to trigger a logout. */
 async function apiPostAuthed(body, opts){
   const background = !!(opts && opts.background);
-  const res = await apiPost(Object.assign({}, body, { token: sessionToken }));
+  const res = await apiPost(Object.assign({}, body, { token: sessionToken }), undefined, { background });
   if(!res || res.success === false){
     const msg = (res && res.error) || 'การดำเนินการล้มเหลว';
     const isSessionErr = res && /session|เข้าสู่ระบบ/i.test(res.error || '');
@@ -2334,21 +2605,32 @@ async function _loadBulkRecentInner(){
   return bulkRecent;
 }
 
-async function loadMeterStatus(){
-  // ONE request returns both maps (see getMeterStatus in Code.gs). Kept as a
-  // single round-trip on purpose: the /exec endpoint is the slowest hop and
-  // has shown intermittent 404s under parallel load, so we don't fan out here.
-  try{
-    const res = await apiPost({ action:'getMeterStatus', meterIds: subs.map(s => s.id) });
-    if(res && res.success){
-      if(res.status) meterStatus = res.status;
-      if(res.today)  meterStatusToday = res.today;
-      if(res.date)   loggingDayLabel = res.date;
-    }
-  }catch(e){ console.warn('⚠️ โหลดสถานะมิเตอร์ไม่ได้:', e.message); }
+/* `prefetched` is the doGet payload. A backend that folds meterStatus /
+   today / date / months into doGet saves this whole round trip (and the
+   getAvailableMonths one); an older backend leaves them out and the separate
+   call below still runs, so frontend and Code.gs can be deployed in any order. */
+async function loadMeterStatus(prefetched){
+  if(prefetched && prefetched.meterStatus){
+    meterStatus = prefetched.meterStatus;
+    if(prefetched.today) meterStatusToday = prefetched.today;
+    if(prefetched.date)  loggingDayLabel = prefetched.date;
+    if(Array.isArray(prefetched.months)) availableMonths = prefetched.months;
+  } else {
+    // ONE request returns both maps (see getMeterStatus in Code.gs). Kept as a
+    // single round-trip on purpose: the /exec endpoint is the slowest hop and
+    // has shown intermittent 404s under parallel load, so we don't fan out here.
+    try{
+      const res = await apiPost({ action:'getMeterStatus', meterIds: subs.map(s => s.id) });
+      if(res && res.success){
+        if(res.status) meterStatus = res.status;
+        if(res.today)  meterStatusToday = res.today;
+        if(res.date)   loggingDayLabel = res.date;
+      }
+    }catch(e){ console.warn('⚠️ โหลดสถานะมิเตอร์ไม่ได้:', e.message); }
+  }
   // Month list is only needed by the admin report pickers — fetch it lazily
   // and never block the entry screen on it.
-  if(appMode === 'admin' && !availableMonths) loadAvailableMonths();
+  if((appMode === 'admin' || appMode === 'viewer') && !availableMonths) loadAvailableMonths();
   // Deliberately NOT awaited: this is a prefetch that saves a request when a
   // meter is later opened, not something the entry screen needs in order to
   // paint. Awaiting it here put a whole-sheet read on the critical path next
@@ -2391,14 +2673,23 @@ let _adminRecordsInFlight = null;
    two minutes. It is now pulled the first time a tab that needs it is opened. */
 let _adminRecordsLoaded = false;
 
+/* Admin or report-viewer — matches the backend's _requireReportAccess on
+   getRawRecords. The frontend guard used to check `appMode !== 'admin'` only,
+   which meant a viewer's session was blocked from ever calling this even
+   after the backend was opened up to it: the fetch never fired, so the
+   per-meter chart card stayed on "no data" while the group-level charts
+   (which read from server-side summaries, not this) worked fine. */
 async function ensureAdminRecords(){
-  if(_adminRecordsLoaded || appMode !== 'admin' || !sessionToken) return;
+  const allowed = appMode === 'admin' || appMode === 'viewer';
+  if(_adminRecordsLoaded || !allowed || !sessionToken) return;
   setSyncStatus('busy','กำลังโหลดข้อมูล...');
   try{
     await loadAdminRecords();
     _adminRecordsLoaded = true;
     setSyncStatus('ok','โหลดข้อมูลแล้ว');
-    renderData(); updateRecordWindowNotice(); updateBadge();
+    // Data-tab rendering and its record-count badge are admin-only UI; a
+    // viewer never has that panel in the DOM active, so skip the wasted work.
+    if(appMode === 'admin'){ renderData(); updateRecordWindowNotice(); updateBadge(); }
     if(document.querySelector('.panel.active')?.id === 'panel-chart'){
       populateDDs(); initG9Pickers(); renderSubChart();
     }
@@ -2486,6 +2777,89 @@ function invalidateSummaryCache(reason){
   console.log(`🗑 invalidateSummaryCache — ล้าง ${keys} keys, reason: ${reason||'ไม่ระบุ'}`);
 }
 
+/* Manual refresh for the three charts. There is no auto-refresh or polling —
+   a chart left open does not learn about a reading someone else just saved
+   on another device, because summaryCache (client) and the server's own
+   10-minute cache both stay put until something explicitly clears them.
+   Polling on a timer was considered and rejected: it would fire network
+   calls nobody asked for, on every open tab, whether or not anyone is
+   looking — the wrong trade given how much of this session went into making
+   the app NOT do unnecessary round trips. A button people press only when
+   they actually want to see whether anything changed costs nothing the rest
+   of the time. */
+async function _withRefreshSpin(btnId, fn){
+  const btn = document.getElementById(btnId);
+  if(btn){ btn.disabled = true; btn.style.animation = 'spin 0.8s linear infinite'; }
+  try { await fn(); }
+  finally { if(btn){ btn.disabled = false; btn.style.animation = ''; } }
+}
+function refreshCmpChart(){
+  return _withRefreshSpin('cmp-refresh-btn', async () => {
+    invalidateSummaryCache('manual-refresh:cmp');
+    await renderCmpChart();
+  });
+}
+function refreshG9Chart(){
+  return _withRefreshSpin('g9-refresh-btn', async () => {
+    invalidateSummaryCache('manual-refresh:g9');
+    await renderG9Chart();
+  });
+}
+/* Meter-select handler for the per-meter chart. Fetches that meter's rows via
+   the lightweight action, then renders. Shows a loading state on the chart
+   element while the fetch is in flight so it doesn't look frozen. */
+async function onSubChartMeterChange(){
+  var meterId = document.getElementById('chart-sub').value;
+  var el = document.getElementById('sub-chart-el');
+  if(!meterId){ renderSubChart(); return; }
+  if(el && !subChartRecords[meterId]) el.innerHTML = chartSkeletonHTML();
+  try { await loadSubChartRecords(meterId); }
+  catch(e){ /* fall back to whatever getSubRecs can find in global records */ }
+  // If the user switched to another meter while this one was loading, drop
+  // this stale result — the newer selection's own call will render.
+  if(document.getElementById('chart-sub').value !== meterId) return;
+  renderSubChart();
+  preloadAdjacentMeter(meterId);
+}
+
+/* Warms the cache for the NEXT meter in the dropdown, so stepping through
+   meters one by one feels instant after the first. Deliberately conservative
+   to honour "don't fetch more than necessary": only the single next meter,
+   only if not already cached, and only when the browser is idle (so it never
+   competes with the current chart's own load or anything the user actually
+   triggered). If requestIdleCallback isn't available it just skips —
+   preloading is a nicety, not required for correctness. */
+function preloadAdjacentMeter(currentMeterId){
+  if(typeof requestIdleCallback !== 'function') return;
+  var sel = document.getElementById('chart-sub');
+  if(!sel) return;
+  var opts = Array.prototype.slice.call(sel.options).map(function(o){ return o.value; }).filter(Boolean);
+  var idx = opts.indexOf(currentMeterId);
+  if(idx < 0 || idx + 1 >= opts.length) return;   // no next meter
+  var nextId = opts[idx + 1];
+  if(subChartRecords[nextId]) return;              // already warm
+  requestIdleCallback(function(){
+    // Re-check: the user may have changed meters since this was queued.
+    if(!subChartRecords[nextId]){
+      loadSubChartRecords(nextId).catch(function(){ /* preload is best-effort */ });
+    }
+  }, { timeout: 3000 });
+}
+
+function refreshSubChart(){
+  // Per-meter refresh now goes through the lightweight getMeterRecords action
+  // (one meter, small stable cache) instead of getRawRecords (full sheet).
+  // Re-fetches the currently selected meter only.
+  return _withRefreshSpin('sub-refresh-btn', async () => {
+    var meterId = document.getElementById('chart-sub').value;
+    if(meterId){
+      try { await loadSubChartRecords(meterId); }
+      catch(e){ /* apiPostAuthed already surfaced the error toast */ }
+    }
+    renderSubChart();
+  });
+}
+
 function safeDestroyChart(inst){
   if(!inst) return;
   try{ inst.destroy(); }
@@ -2514,6 +2888,56 @@ function ensureQRCode(){    return (typeof QRCode!=='undefined')    ? Promise.re
 function ensureXLSX(){      return (typeof XLSX!=='undefined')      ? Promise.resolve() : loadScript(CDN.xlsx); }
 function ensureApex(){      return (typeof ApexCharts!=='undefined') ? Promise.resolve() : loadScript(CDN.apexcharts); }
 
+/* HTML for the chart skeleton (see .chart-skeleton CSS). Eight bars is enough
+   to read as "a bar chart is loading" without looking like real data. */
+function chartSkeletonHTML(){
+  return '<div class="chart-skeleton">' +
+    '<div class="sk-bar"></div>'.repeat(8) +
+    '</div>';
+}
+
+/* Debounced chart redraws for the two server-backed charts (cmp, g9). Tapping
+   a range/period button or nudging a date field used to fire renderCmpChart /
+   renderG9Chart synchronously on every single change — so clicking through
+   "this month → last month → 3 months" quickly launched three getMonthlySummary
+   round-trips back to back, and the UI felt like it lagged behind the taps.
+   These wrappers show the skeleton immediately (instant visual feedback) but
+   hold the actual fetch for a beat, so a rapid burst of taps collapses into one
+   network call for the final selection. The per-meter chart is not debounced:
+   it renders from an in-memory store without a network call, and its own
+   request-id guard (subReqId) drops stale renders on rapid switching. */
+var _cmpDebounceTimer = null, _g9DebounceTimer = null;
+var CHART_DEBOUNCE_MS = 220;
+function renderCmpChartDebounced(){
+  var el = document.getElementById('cmp-chart-el');
+  if(el && document.getElementById('cmp-group').value) el.innerHTML = chartSkeletonHTML();
+  // Bump the request id NOW so any render still awaiting its summary fetch sees
+  // itself as stale and bails, instead of racing the debounced one that's about
+  // to fire. Without this a fast series of switches could let an earlier
+  // in-flight render finish last and leave the wrong (or blank) chart.
+  cmpReqId++;
+  if(_cmpDebounceTimer) clearTimeout(_cmpDebounceTimer);
+  _cmpDebounceTimer = setTimeout(function(){ _cmpDebounceTimer = null; renderCmpChart(); }, CHART_DEBOUNCE_MS);
+}
+function renderG9ChartDebounced(){
+  var el = document.getElementById('g9-chart-el');
+  if(el) el.innerHTML = chartSkeletonHTML();
+  g9ReqId++;   // invalidate any in-flight render — see the cmp version's comment
+  if(_g9DebounceTimer) clearTimeout(_g9DebounceTimer);
+  _g9DebounceTimer = setTimeout(function(){ _g9DebounceTimer = null; renderG9Chart(); }, CHART_DEBOUNCE_MS);
+}
+
+
+/* Shown next to the status dot at all times (not just in a toast, which
+   disappears after a couple of seconds) so a glance at the header answers
+   "is this current, or from an hour ago" without opening the console. */
+function updateLastSyncTime(){
+  const el = document.getElementById('rd-last-sync');
+  if(!el) return;
+  const now = new Date();
+  const pad = v => String(v).padStart(2,'0');
+  el.textContent = 'อัปเดต ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+}
 function setSyncStatus(status, msg){
   const dot = document.getElementById('sync-dot');
   const ban = document.getElementById('sync-banner');
@@ -2528,6 +2952,7 @@ function setSyncStatus(status, msg){
   } else {
     ban.className = 'sync-banner show success'; ico.textContent = '✅'; bm.textContent = msg || 'Sync สำเร็จ';
     setTimeout(() => { ban.className = 'sync-banner'; }, 2500);
+    updateLastSyncTime();
   }
 }
 /* Fetch the doGet payload with retries.
@@ -2583,7 +3008,7 @@ function loadFromServer(){
       if(data.reportGroups && Array.isArray(data.reportGroups)) reportGroups = data.reportGroups;
       if(data.calendar     && Array.isArray(data.calendar))     workCalendar = data.calendar;
       persist(); isConnected = true; invalidateSummaryCache('loadFromServer');
-      await loadMeterStatus();
+      await loadMeterStatus(data);
       // records are fetched lazily by the tabs that need them (see ensureAdminRecords)
       renderAll();
       if(activeSub){
@@ -2591,6 +3016,7 @@ function loadFromServer(){
         if(sb && !sb.disabled){ sb.innerHTML = '✅ บันทึกข้อมูล'; }
       }
       console.log(`✅ Sync — ${subs.length} subs, ${workCalendar.length} cal${appMode==='admin' ? ', '+records.length+' records' : ''}`);
+      updateLastSyncTime();
     })
     .catch(err => { console.warn('⚠️ โหลด Server ไม่ได้ ใช้ Cache:', err.message); isConnected = false; });
 }
@@ -2618,7 +3044,7 @@ function refreshData(){
       if(data.reportGroups && Array.isArray(data.reportGroups)) reportGroups = data.reportGroups;
       if(data.calendar     && Array.isArray(data.calendar))     workCalendar = data.calendar;
       persist(); isConnected = true; invalidateSummaryCache('refreshData');
-      await loadMeterStatus();
+      await loadMeterStatus(data);
       // records are fetched lazily by the tabs that need them (see ensureAdminRecords)
       renderAll();
       setSyncStatus('ok',`โหลดสำเร็จ — ${subs.length} Meter`);
@@ -2640,7 +3066,7 @@ async function testConn(){
     box.innerHTML = `<div class="info-box">✅ เชื่อมต่อสำเร็จ — ${recNote}${subs.length} subs</div>`;
   }catch(e){
     setSyncStatus('error','ล้มเหลว');
-    box.innerHTML = `<div class="warn-box">❌ ${e.message}</div>`;
+    box.innerHTML = `<div class="warn-box">❌ ${esc(e.message)}</div>`;
   }
 }
 
@@ -2667,14 +3093,34 @@ function computeUsed(rawRecords){
       // flow into the Data table, the charts and the group totals as if it
       // were kWh. null keeps them out and lets the UI render "—".
       if(vt === 'demand' || vt === 'snapshot'){ rec.used = null; return; }
-      if(i === chain.length - 1){ rec.used = 0; }
-      else {
-        const diff = parseFloat(chain[i+1].kwh) - parseFloat(rec.kwh);
-        // A counter's difference IS meaningful (events elapsed), so it is
-        // computed — but it is a count, not energy, and callers that total
-        // kWh must exclude it. See sumGroupOnDay().
-        rec.used = Math.max(0, diff) * (vt === 'counter' ? 1 : multiplier);
+
+      /* A cumulative register in service never legitimately reads 0, so a 0
+         here means "nobody wrote anything down", not "nothing was used" — see
+         _isUsableReading(). This used to only be enforced server-side
+         (meterUsedOnDay, which the group charts and the monthly report read
+         from), while this client-side path — the one the per-meter chart and
+         the Data table read from — computed straight off whatever was typed,
+         zero included. A single 0 in the middle of a chain therefore produced
+         two wrong numbers here that the group total never had: the day before
+         it clamped to 0 (losing that day's real usage) and the 0 day itself
+         invented a spike equal to the meter's entire lifetime reading. That
+         made a per-meter total and the group total genuinely disagree even
+         though both were "reading the same data" — because the 0 was only
+         being treated as invalid on one of the two paths. */
+      if(!_isUsableReading(meterId, parseFloat(rec.kwh))){ rec.used = null; return; }
+
+      let nextVal = null;
+      for(let k = i + 1; k < chain.length; k++){
+        const v = parseFloat(chain[k].kwh);
+        if(_isUsableReading(meterId, v)){ nextVal = v; break; }
       }
+      if(nextVal === null){ rec.used = 0; return; }   // last usable reading in the chain
+
+      const diff = nextVal - parseFloat(rec.kwh);
+      // A counter's difference IS meaningful (events elapsed), so it is
+      // computed — but it is a count, not energy, and callers that total
+      // kWh must exclude it.
+      rec.used = Math.max(0, diff) * (vt === 'counter' ? 1 : multiplier);
     });
   });
   const _out = Object.values(groups).flat();
@@ -2689,7 +3135,7 @@ async function init(){
   { const t = document.getElementById('hdr-title'); if(t) t.textContent = SITE_NAME + ' — ' + SITE_CODE; }
   const hasSession = restoreSession();
   renderAll();
-  document.getElementById('qr-url-preview').textContent = QR_BASE_URL + '?meter=SUB-XX';
+  document.getElementById('qr-url-preview').textContent = QR_BASE_URL + '?meter=EM-XX';
   const params = new URLSearchParams(location.search);
   const p = params.get('meter') || params.get('sub');  // accept both (old printed QR = ?sub=)
   if(p){
@@ -2711,15 +3157,16 @@ async function init(){
         pendingQrSub = null;
       }
     } else {
-      await loadFromServer();
+      // No session but a QR meter is pending: show the picker IMMEDIATELY,
+      // then load in the background. Doing loadFromServer() first (≈5s) left a
+      // stale/default login form flashing on screen until it resolved and
+      // backToChoose() finally ran — the "window appears then disappears" bug.
       backToChoose();
+      loadFromServer();
     }
   } else {
     loadFromServer();
-    // No QR param and no restored session: this is a bare app open, so land
-    // on the three-way picker. Without this, the recorder form was left
-    // showing by default (its only "hidden" state came from the query-param
-    // branch above), so a bare open silently skipped the picker entirely.
+    // No QR param and no restored session: bare app open → three-way picker.
     if(!hasSession) backToChoose();
   }
 }
@@ -2728,6 +3175,7 @@ function renderAll(){
   if(!DEBUG_PERF){
     renderZoneAreas(); renderData(); renderStats(); populateDDs(); updateBadge();
     if(activeSub){ updateMeterSummary(); renderRecent(); }
+    refreshSubChartIfVisible();
     return;
   }
   const seg = (name, fn) => { const l=perfLabel('renderAll:'+name); perfStart(l); fn(); perfEnd(l); };
@@ -2738,7 +3186,51 @@ function renderAll(){
   seg('populateDDs', populateDDs);
   seg('updateBadge', updateBadge);
   if(activeSub){ seg('meterSummary', updateMeterSummary); seg('recent', renderRecent); }
+  seg('subChart', refreshSubChartIfVisible);
   console.log(`⏱ renderAll TOTAL: ${(performance.now()-_t0).toFixed(2)} ms`);
+}
+
+/* After any local mutation of `records` (edit, delete, an add that merged in),
+   the per-meter chart must be redrawn from the new array — the Data table was
+   already being re-rendered by renderData(), but the chart was not, so a
+   deleted row vanished from the table while its bar stayed on the chart. Only
+   redraws when a chart instance already exists (the chart tab has been opened
+   this session); it reads purely from the in-memory `records`, so there is no
+   network cost and nothing happens when no chart is on screen. */
+function refreshSubChartIfVisible(){
+  if(typeof subChartInst === 'undefined' || !subChartInst) return;
+  /* Keep the per-meter store and reconcile it with local changes, instead of
+     clearing it. Clearing made getSubRecs fall back to the global `records`
+     array, which is empty for a viewer and for an admin who hasn't opened the
+     Data tab (the chart tab no longer loads the whole sheet) — so any
+     loadFromServer, 🔄, cache flush or edit turned a working chart into
+     "ไม่มีข้อมูล". Re-fetching from the server here isn't safe either: this runs
+     optimistically BEFORE an edit/delete reaches the server, so it would fetch
+     the pre-change rows.
+     Local edits and deletes are only possible with `records` loaded (Data tab),
+     so: when it is loaded, merge it over the store — edited rows take the local
+     version, rows missing locally inside the loaded window are treated as
+     deleted, rows older than the window are kept. When it isn't loaded, nothing
+     on this device could have changed the meter's rows, so the store is kept. */
+  const meterId = (document.getElementById('chart-sub') || {}).value;
+  const stored = meterId ? subChartRecords[meterId] : null;
+  if(stored && _adminRecordsLoaded){
+    const from = recordsWindowFrom || '';           // '' = whole sheet loaded
+    const local = new Map(records.filter(r => r.meterId === meterId).map(r => [String(r.id), r]));
+    const merged = [];
+    stored.forEach(r => {
+      const id = String(r.id);
+      if(local.has(id)){ merged.push(Object.assign({}, local.get(id))); local.delete(id); }
+      else if(from && String(r.date) < from){ merged.push(Object.assign({}, r)); }   // outside the loaded window — can't have changed here
+      // else: inside the loaded window but gone locally → deleted on this device
+    });
+    local.forEach(r => merged.push(Object.assign({}, r)));   // added or moved to this meter locally
+    merged.sort((a,b) => (String(a.date)+' '+String(a.time)).localeCompare(String(b.date)+' '+String(b.time)));
+    subChartRecords[meterId] = computeUsed(merged);
+  }
+  _aggCache = {};              // rows may have changed — recompute aggregates
+  _subChartStructKey = null;   // force a clean rebuild
+  try { renderSubChart(); } catch(e){ /* chart redraw is best-effort */ }
 }
 
 const TAB_ORDER = ["entry","data","chart","summary","cost","qr","settings"];
@@ -2747,8 +3239,9 @@ const TAB_ORDER = ["entry","data","chart","summary","cost","qr","settings"];
    access control — someone could still call goTab('entry') from the console
    or a stale bookmark, so the boundary is enforced here too. */
 const ROLE_TABS = {
-  admin:    ['entry','data','chart','summary','cost','qr','settings'],
-  viewer:   ['chart','summary','cost'],
+  // No 'cost' in GW until its supply points are configured (see COST_SUPPLIES).
+  admin:    ['entry','data','chart','summary','qr','settings'],
+  viewer:   ['chart','summary'],
   basic:    ['entry']     // recorder
 };
 function goTab(name){
@@ -2764,14 +3257,32 @@ function goTab(name){
   if(tabEl) tabEl.classList.add('active');
   if(name === 'data')     { ensureAdminRecords(); renderData(); renderStats(); updateRecordWindowNotice(); }
   if(name === 'chart'){
-    ensureAdminRecords(); populateDDs(); setSubQuick('30d'); buildCompareGroupOptions(); initG9Pickers();
-    /* The card the person sees first — "กราฟเทียบการใช้ไฟฟ้าแต่ละกลุ่ม" — is
-       rendered to completion before the second chart even starts. Both used to
-       fire together; they hit getSummaryCached with different date ranges (so
-       different cache keys), meaning two heavy summary requests queued back to
-       back with no ordering guarantee. Awaiting the first means the chart at
-       the top of the screen is never left waiting behind one lower down. */
-    (async () => { await renderCmpChart(); renderG9Chart(); })();
+    /* The chart tab no longer pulls the full record set (ensureAdminRecords /
+       getRawRecords, thousands of rows). Nothing here needs it anymore:
+       - the two group charts read server-side summaries (getSummaryCached),
+       - the per-meter chart fetches one meter at a time (getMeterRecords),
+       - the only remaining use was picker defaults in initG9Pickers, which
+         already prefer the lightweight availableMonths list.
+       So we fetch just that light month list instead. This removes a heavy,
+       fully redundant full-sheet read from every chart-tab open. (The Data
+       tab still calls ensureAdminRecords on its own, unchanged.) */
+    (async () => {
+      if((appMode === 'admin' || appMode === 'viewer') && !availableMonths) await loadAvailableMonths();
+      populateDDs(); setSubQuick('thisM'); buildCompareGroupOptions(); initG9Pickers(); initCmpPickers();
+      // Light the per-meter segment to match its default range (this month),
+      // consistent with the group chart's segment default.
+      var subSeg = document.getElementById('sub-segment');
+      if(subSeg && !subSeg.querySelector('button.on')){
+        var d = subSeg.querySelector('button[data-slot="0"]'); if(d) d.classList.add('on');
+      }
+      /* The card the person sees first — "กราฟเทียบการใช้ไฟฟ้าแต่ละกลุ่ม" — is
+         rendered to completion before the second chart even starts. Both used to
+         fire together; they hit getSummaryCached with different date ranges (so
+         different cache keys), meaning two heavy summary requests queued back to
+         back with no ordering guarantee. Awaiting the first means the chart at
+         the top of the screen is never left waiting behind one lower down. */
+      await renderCmpChart(); renderG9Chart();
+    })();
   }
   if(name === 'qr')       { renderQR(); }
   if(name === 'settings') { renderSubList(); renderCalendarList(); }
@@ -2787,24 +3298,39 @@ function getDayType(dateStr){
   const dow = new Date(y, m-1, d).getDay();
   return (dow === 0 || dow === 6) ? 'holiday' : 'work';
 }
-function getDayNote(dateStr){ return workCalendar.find(c => c.date === dateStr)?.note || ''; }
 async function addCalendarDay(){
   const date = document.getElementById('cal-date').value;
   const type = document.getElementById('cal-type').value;
   const note = document.getElementById('cal-note').value.trim();
   if(!date) return toast('เลือกวันที่ด้วย','err');
   const idx = workCalendar.findIndex(c => c.date === date);
+  const before = idx >= 0 ? Object.assign({}, workCalendar[idx]) : null;   // for rollback on failure
   if(idx >= 0) workCalendar[idx] = { date, type, note }; else workCalendar.push({ date, type, note });
   persist(); renderCalendarList();
   document.getElementById('cal-date').value = ''; document.getElementById('cal-note').value = '';
   toast('✅ เพิ่มวันพิเศษแล้ว','ok');
-  try{ await apiPostAuthed({ action:'setCalendarDay', date, type, note }); invalidateSummaryCache('setCalendarDay:'+date); }catch(e){ toast('⚠️ Sync ปฏิทินล้มเหลว: ' + e.message,'warn'); }
+  try{ await apiPostAuthed({ action:'setCalendarDay', date, type, note }); invalidateSummaryCache('setCalendarDay:'+date); }
+  catch(e){
+    // Undo locally so the device doesn't keep a day the Sheet never got.
+    workCalendar = workCalendar.filter(c => c.date !== date);
+    if(before) workCalendar.push(before);
+    persist(); renderCalendarList();
+    toast('⚠️ บันทึกลงชีทไม่สำเร็จ — ยกเลิกการเปลี่ยนแปลงในเครื่องแล้ว: ' + (e.message || ''),'err');
+  }
 }
 async function removeCalendarDay(date){
   if(!confirm(`ลบวันพิเศษ ${fmtDate(date)}?`)) return;
+  const removed = workCalendar.find(c => c.date === date);
   workCalendar = workCalendar.filter(c => c.date !== date);
   persist(); renderCalendarList(); toast('ลบแล้ว');
-  try{ await apiPostAuthed({ action:'deleteCalendarDay', date }); invalidateSummaryCache('deleteCalendarDay:'+date); }catch(e){}
+  try{ await apiPostAuthed({ action:'deleteCalendarDay', date }); invalidateSummaryCache('deleteCalendarDay:'+date); }
+  catch(e){
+    // Used to be swallowed silently, leaving the day gone here but still in the
+    // Sheet. Put it back so the device matches the Sheet, and say so.
+    if(removed && !workCalendar.some(c => c.date === date)) workCalendar.push(removed);
+    persist(); renderCalendarList();
+    toast('⚠️ ลบจากชีทไม่สำเร็จ — คืนวันนี้ในเครื่องแล้ว: ' + (e.message || ''),'err');
+  }
 }
 function renderCalendarList(){
   const box = document.getElementById('cal-list');
@@ -2867,7 +3393,7 @@ function renderTable(){
   if(total === 0){ emptyBox.style.display = 'block'; if(document.getElementById('pageNav')) document.getElementById('pageNav').innerHTML = ''; perfEnd(_plT); return; }
   emptyBox.style.display = 'none';
   tbody.innerHTML = pageItems.map(r => `<tr>
-    <td class="td-sub">${r.meterId}</td><td>${fmtDate(r.date)}</td><td>${fmtTime(r.time)}</td>
+    <td class="td-sub" title="${r.meterId}">${esc(meterNameById(r.meterId))}</td><td>${fmtDate(r.date)}</td><td>${fmtTime(r.time)}</td>
     <td class="td-kwh">${fmtNum(r.kwh, r.meterId)}</td>
     <td class="td-used"><strong>${fmtUsedCell(r.used, r.meterId)}</strong></td>
     <td class="desktop-only">${esc(r.user)||'—'}</td><td class="desktop-only">${esc(r.note)||'—'}</td>
@@ -2924,6 +3450,11 @@ function renderZoneAreas(){
       const isSel = activeSub && activeSub.id === s.id;
       const d = document.createElement('div');
       d.className = 'sub-card' + (isSel ? ' sel' : '') + (recordedToday ? ' today' : '');
+      // The search box promises "รหัส, ชื่อ, หรือโซน", but the card shows only
+      // the name and status, so matching on textContent could never find a
+      // meter by its id or zone (and "บันทึก" matched every card via the
+      // status line). Search reads this instead.
+      d.dataset.search = [s.id, s.name, s.zone, label].join(' ').toLowerCase();
       /* Name only. The card used to show the id above the name — "SUB-31"
          then "SUB NO.31" — which is the same information twice and pushed the
          name, the part a recorder actually reads, into second place. */
@@ -2939,6 +3470,10 @@ function renderZoneAreas(){
     block.appendChild(grid);
     container.appendChild(block);
   });
+  // A rebuild resets every card to visible, but the search box keeps its text —
+  // coming back from a meter showed "SUB-3" in the box over an unfiltered list.
+  const q = document.getElementById('rd-search-input');
+  if(q && q.value) rdApplySearch(q.value);
 }
 let historyLoadFailed = false;   // true when the per-meter history fetch failed
 
@@ -2980,7 +3515,7 @@ async function retryLoadHistory(){
   const box = document.getElementById('history-error-box');
   if(box) box.innerHTML = '⏳ กำลังโหลดประวัติอีกครั้ง...';
   try{
-    activeSubRecent = await loadRecentForSub(activeSub.id, 5);
+    activeSubRecent = _recomputeRecentUsed(await loadRecentForSub(activeSub.id, 5), activeSub.id);
     historyLoadFailed = false;
     toast('✅ โหลดประวัติสำเร็จ','ok');
   }catch(e){
@@ -3012,7 +3547,9 @@ async function selectSub(meterId){
   sb.disabled  = true;
   sb.innerHTML = '⏳ กำลังโหลดประวัติมิเตอร์...';
   activeSubRecent = [];
-  updateMeterSummary(); renderRecent(); renderZoneAreas();
+  // No renderZoneAreas() here: the list is hidden while a meter is open, and
+  // backToList() rebuilds it — redrawing every card on each tap was pure cost.
+  updateMeterSummary(); renderRecent();
   // History load must succeed before entry is allowed. If it fails, the app
   // has no previous reading to compare against, so BOTH safety checks are
   // silently disabled — "value lower than last" and "abnormally high vs
@@ -3022,7 +3559,7 @@ async function selectSub(meterId){
   historyLoadFailed = false;
   // Served from the bulk set when available — no network call on meter open.
   if(bulkRecent && Object.prototype.hasOwnProperty.call(bulkRecent, activeSub.id)){
-    activeSubRecent = bulkRecent[activeSub.id] || [];
+    activeSubRecent = _recomputeRecentUsed(bulkRecent[activeSub.id] || [], activeSub.id);   // server `used` has no zero guard
     applyReadingLabel();
     applyHistoryLoadState(); updateMeterSummary(); renderRecent();
     const sbFast = document.getElementById('save-btn');
@@ -3030,7 +3567,7 @@ async function selectSub(meterId){
     return;
   }
   try{
-    activeSubRecent = await loadRecentForSub(activeSub.id, 5);
+    activeSubRecent = _recomputeRecentUsed(await loadRecentForSub(activeSub.id, 5), activeSub.id);
   }catch(e){
     historyLoadFailed = true;
     activeSubRecent = [];
@@ -3147,8 +3684,23 @@ function previewUsed(){
   if(lastKwh === null){ chip.className = 'chip chip-green'; chip.textContent = '📌 บันทึกครั้งแรกของ Meter นี้'; }
   else {
     const diff = (val - lastKwh) * multiplier;
-    chip.className = diff >= 0 ? 'chip chip-green' : 'chip chip-orange';
-    chip.textContent = diff >= 0 ? `⚡ ใช้ไฟฟ้าไปรอบนี้: +${fmtNum(diff, activeSub.id)} ${UNIT}` : `⚠️ ค่าน้อยกว่าครั้งก่อน (${fmtNum(lastKwh, activeSub.id)})`;
+    if(diff < 0){
+      chip.className = 'chip chip-orange';
+      chip.textContent = `⚠️ ค่าน้อยกว่าครั้งก่อน (${fmtNum(lastKwh, activeSub.id)})`;
+    } else {
+      // Same abnormally-high check the save step runs, surfaced live while
+      // typing: if this round's usage is more than ABNORMAL_MULTIPLIER× the
+      // recent average, warn right away instead of only at save. Lets the
+      // recorder catch a mis-key (extra digit) before committing.
+      const recentAvg = getRecentAvgUsed(activeSub.id);
+      if(recentAvg > 0 && diff > recentAvg * ABNORMAL_MULTIPLIER){
+        chip.className = 'chip chip-orange';
+        chip.textContent = `🔺 สูงผิดปกติ: +${fmtNum(diff, activeSub.id)} ${UNIT} (เฉลี่ย ${fmtNum(recentAvg, activeSub.id)})`;
+      } else {
+        chip.className = 'chip chip-green';
+        chip.textContent = `⚡ ใช้ไฟฟ้าไปรอบนี้: +${fmtNum(diff, activeSub.id)} ${UNIT}`;
+      }
+    }
   }
 }
 function renderRecent(){
@@ -3211,6 +3763,23 @@ async function saveRecord(){
   }
   await doSaveRecord(activeSub, kwh, date, time, user, note);
 }
+/* Recomputes `used` across a recent-readings list after a new reading is
+   prepended. A freshly saved record arrives with no `used`, and the reading
+   that was previously newest now HAS a later reading to diff against — its
+   `used` (the "consumption this round" number the recorder wants to see) only
+   exists once that next reading is in hand. Rather than duplicate the diff +
+   zero-guard logic, this reuses computeUsed (which sorts oldest→newest and
+   sets `used` with the same guard as everywhere else), then restores the
+   newest-first order the recent list is displayed in. Takes one extra element
+   (slice 0,6 by the caller) so the oldest visible row still has a neighbour to
+   diff against and doesn't wrongly show 0. */
+function _recomputeRecentUsed(recentList, meterId){
+  const copy = recentList.map(r => Object.assign({}, r));   // don't mutate caller's objects in place
+  computeUsed(copy);                                        // sorts ascending + sets used
+  copy.sort((a,b) => (`${b.date} ${b.time||'00:00'}`).localeCompare(`${a.date} ${a.time||'00:00'}`));  // back to newest-first
+  return copy;
+}
+
 async function doSaveRecord(sub, kwh, date, time, user, note){
   const now = new Date();
   const rec = { id: `REC-${now.getTime()}-${Math.floor(Math.random()*1000)}`, meterId: sub.id, meterName: sub.name, zone: sub.zone, date, time, kwh, user, note, ts: now.toISOString(), editedTs: '', editedBy: '' };
@@ -3226,15 +3795,17 @@ async function doSaveRecord(sub, kwh, date, time, user, note){
   meterStatus[sub.id] = true;
   meterStatusToday[sub.id] = true;
   if(bulkRecent && bulkRecent[sub.id]){
-    bulkRecent[sub.id] = [rec].concat(bulkRecent[sub.id]).slice(0, 5);
+    bulkRecent[sub.id] = _recomputeRecentUsed([rec].concat(bulkRecent[sub.id]).slice(0, 6), sub.id).slice(0, 5);
   }
-  activeSubRecent = [rec].concat(activeSubRecent || []).slice(0, 5);
+  activeSubRecent = _recomputeRecentUsed([rec].concat(activeSubRecent || []).slice(0, 6), sub.id).slice(0, 5);
 
   document.getElementById('in-kwh').value  = '';
   document.getElementById('in-note').value = '';
   document.getElementById('preview-box').style.display = 'none';
   setNow();
-  renderZoneAreas(); updateBadge(); updateMeterSummary(); renderRecent();
+  // The meter list is hidden behind the entry screen; backToList() redraws it
+  // with the new "recorded today" state, so no rebuild per save.
+  updateBadge(); updateMeterSummary(); renderRecent();
   toast('✅ บันทึกแล้ว','ok');
 
   const btn = document.getElementById('save-btn');
@@ -3310,6 +3881,10 @@ async function saveEdit(){
   if(!date) return toast('เลือกวันที่ด้วย','err');
   const sub = subs.find(s => s.id === newSubId);
   const originalRecord = { ...target };
+  // Version marker captured at edit-open time: the editedTs if this row was
+  // edited before, else its original ts. Sent as baseTs so the backend can
+  // reject if someone else edited the row in the meantime (lost-update guard).
+  const baseTs = originalRecord.editedTs || originalRecord.ts || '';
 
   // Mutate the object itself — it keeps its identity through computeUsed()'s
   // regrouping, so no position needs tracking.
@@ -3329,8 +3904,19 @@ async function saveEdit(){
   closeEdit(); renderAll(); toast('✅ แก้ไขแล้ว (กำลัง sync...)','ok');
   setSyncStatus('busy','กำลังซิงค์...');
   try{
-    const payload = { id:saved.id, meterId:saved.meterId, meterName:saved.meterName, zone:saved.zone, date:saved.date, time:saved.time, kwh:saved.kwh, user:saved.user, note:saved.note, ts:saved.ts, editedTs:saved.editedTs, editedBy:saved.editedBy };
-    await apiPostAuthed({ action:'editRecord', record:payload });
+    const payload = { id:saved.id, meterId:saved.meterId, meterName:saved.meterName, zone:saved.zone, date:saved.date, time:saved.time, kwh:saved.kwh, user:saved.user, note:saved.note, ts:saved.ts, editedTs:saved.editedTs, editedBy:saved.editedBy, baseTs:baseTs };
+    const editRes = await apiPostAuthed({ action:'editRecord', record:payload });
+    if(editRes && editRes.conflict){
+      // Someone edited this row first. Roll back the local change and tell the
+      // user to reload — don't silently keep our version (it would look saved
+      // but the server rejected it).
+      records = records.filter(r => r.id !== recordId);
+      records.push(originalRecord);
+      records = computeUsed(records); persist(); renderAll();
+      setSyncStatus('error','มีการแก้ไขชนกัน');
+      toast('⚠️ ' + (editRes.error || 'รายการถูกแก้โดยผู้อื่น กรุณาโหลดใหม่'), 'err');
+      return;
+    }
     invalidateSummaryCache('editRecord:'+saved.meterId+'@'+saved.date);
     setSyncStatus('ok','แก้ไขสำเร็จ');
   }catch(e){
@@ -3354,6 +3940,15 @@ async function deleteRecord(id){
     invalidateSummaryCache('deleteRecord:'+id);
     setSyncStatus('ok','ลบสำเร็จ');
   }catch(e){
+    // "Not found" means the row is already gone on the server — typically the
+    // first attempt deleted it but its response was lost, and the automatic
+    // retry then found nothing. That is the outcome we wanted, so don't
+    // resurrect a row that no longer exists in the Sheet.
+    if(/ไม่พบข้อมูลที่ต้องการลบ/.test((e && e.message) || '')){
+      invalidateSummaryCache('deleteRecord(already gone):'+id);
+      setSyncStatus('ok','ลบสำเร็จ');
+      return;
+    }
     // Put it back by identity, not by the position it used to occupy:
     // computeUsed() has regrouped the array since, so that index now belongs
     // to a different record and splicing there would corrupt the neighbour.
@@ -3385,7 +3980,8 @@ async function saveEditSub(){
   const multiplier = parseFloat(document.getElementById('esub-multiplier').value);
   if(!name || !zone) return toast('⚠️ กรุณากรอกชื่อ Meter และ Zone ให้ครบ','err');
   if(!isFinite(multiplier) || multiplier <= 0) return toast('⚠️ ตัวคูณต้องมากกว่า 0','err');
-  const updatedSub = { ...subs[editSubIndex], name, zone, decimal, multiplier };
+  const prevSub = subs[editSubIndex];                         // for rollback on failure
+  const updatedSub = { ...prevSub, name, zone, decimal, multiplier };
   subs[editSubIndex] = updatedSub; persist(); closeEditSub();
   records = computeUsed(records); persist();
   renderSubList(); renderZoneAreas(); populateDDs(); renderAll();
@@ -3394,7 +3990,16 @@ async function saveEditSub(){
   try{
     await apiPostAuthed({ action:'updateMeterConfig', meter:updatedSub });
     setSyncStatus('ok','บันทึกข้อมูล Meter ลงแผ่นชีทสำเร็จ');
-  }catch(e){ setSyncStatus('error','บันทึกลงชีทไม่สำเร็จ (แต่เซฟเก็บในแคชแล้ว)'); }
+  }catch(e){
+    // Keeping the unsaved config "in cache" meant this device silently disagreed
+    // with the Sheet (and every other device) until the next full load. Revert.
+    const i = subs.findIndex(s => s.id === prevSub.id);
+    if(i >= 0) subs[i] = prevSub;
+    records = computeUsed(records); persist();
+    renderSubList(); renderZoneAreas(); populateDDs(); renderAll();
+    setSyncStatus('error','บันทึกลงชีทไม่สำเร็จ — คืนค่าเดิมในเครื่องแล้ว');
+    toast('⚠️ บันทึก Meter ไม่สำเร็จ: ' + (e.message || ''),'err');
+  }
 }
 
 /* ════════════ FILTER & DATA ════════════ */
@@ -3439,7 +4044,30 @@ function populateDDs(){
   document.getElementById('fl-sub').innerHTML = sOpts;
   const cs = document.getElementById('chart-sub');
   if(cs) cs.innerHTML = cOpts;
+  // Build the custom meter picker. Label shows "name (id)"; both are
+  // searchable; picking commits + loads that meter.
+  if(document.getElementById('chart-sub-picker')){
+    _pickerData['chart-sub-picker'] = {
+      items: subs.map(s => ({ key:s.id, label:`${s.name} (${s.id})` })),
+      onPick: function(id){
+        cs.value = id; syncPickerLabel('chart-sub-picker'); onSubChartMeterChange();
+      }
+    };
+    renderPickerList('chart-sub-picker');
+    syncPickerLabel('chart-sub-picker');
+  }
 }
+
+/* Segmented range control for the per-meter chart — mirrors setCmpQuickSeg. */
+function setSubQuickSeg(slot){
+  var r = getQuickRangeForPeriod(subChartState.period, slot);
+  document.getElementById('sub-from').value = _fitRangeToPeriod(r[0], subChartState.period);
+  document.getElementById('sub-to').value   = _fitRangeToPeriod(r[1], subChartState.period);
+  const seg = document.getElementById('sub-segment');
+  if(seg) seg.querySelectorAll('button').forEach((b,i) => b.classList.toggle('on', i===slot));
+  renderSubChart();
+}
+
 /* The Data-tab stat tiles were removed: after the rolling 90-day record
    window was introduced, three of the four counters (total records,
    meters recorded, total kWh) silently described the loaded window
@@ -3499,9 +4127,15 @@ function renderQR(){
 function renderSubList(){
   document.getElementById('sub-count').textContent = subs.length;
   if(!subs.length){ document.getElementById('sub-list').innerHTML='<div class="section-empty">ยังไม่มี Meter</div>'; return; }
+  // One pass over records, not two filters per meter (O(meters × records)).
+  const stat = {};
+  records.forEach(r => {
+    const t = stat[r.meterId] || (stat[r.meterId] = { cnt:0, used:0 });
+    t.cnt++; t.used += parseFloat(r.used) || 0;
+  });
   document.getElementById('sub-list').innerHTML = subs.map((s,i) => {
-    const cnt       = records.filter(r => r.meterId === s.id).length;
-    const totalUsed = records.filter(r => r.meterId === s.id).reduce((a,r) => a+(parseFloat(r.used)||0), 0);
+    const cnt       = stat[s.id] ? stat[s.id].cnt  : 0;
+    const totalUsed = stat[s.id] ? stat[s.id].used : 0;
     const dec       = s.decimal !== undefined ? s.decimal : 0;
     return `<div class="sub-row">
       <div class="sub-row-info">
@@ -3569,7 +4203,7 @@ async function exportExcel(){
   })));
   ws['!cols'] = Array(12).fill({ wch:18 });
   XLSX.utils.book_append_sheet(wb, ws, hasFilter?'Filtered_Records':'All_Records');
-  XLSX.writeFile(wb, `Meter_${hasFilter?'Filtered_':''}${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.writeFile(wb, `Meter_${hasFilter?'Filtered_':''}${ymdLocal()}.xlsx`);
   toast(`✅ Export ${dataToExport.length} rows${hasFilter?' (filtered)':''}`, 'ok');
 }
 function exportJSON(){
@@ -3604,7 +4238,11 @@ async function clearServerCache(){
   setSyncStatus('busy','กำลังล้าง cache เซิร์ฟเวอร์...');
   try{
     const res = await apiPostAuthed({ action:'flushCaches' });
-    toast('🗑 ล้าง cache แล้ว: ' + (res.cleared || []).join(', '),'ok');
+    if(res.failed && res.failed.length){
+      toast('⚠️ ล้าง cache ไม่ครบ — ไม่สำเร็จ: ' + res.failed.join(' · '),'warn');
+    } else {
+      toast('🗑 ล้าง cache แล้ว: ' + (res.cleared || []).join(', '),'ok');
+    }
     setSyncStatus('ok','ล้าง cache แล้ว — กำลังโหลดใหม่');
     _adminRecordsLoaded = false; bulkRecent = null; availableMonths = null;
     await loadFromServer();
@@ -3635,6 +4273,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   const recorderPassEl = document.getElementById('recorder-pass');
   if(recorderPassEl) recorderPassEl.addEventListener('keydown', e => { if(e.key === 'Enter') handleRecorderLogin(); });
+  const viewerPassEl = document.getElementById('viewer-pass');
+  if(viewerPassEl) viewerPassEl.addEventListener('keydown', e => { if(e.key === 'Enter') handleViewerLogin(); });
 });
 
 // init() is called at the very end of the concatenated script (core-tail.js),
@@ -3665,8 +4305,9 @@ document.addEventListener('DOMContentLoaded', () => {
    second row. That is what makes retrying safe to do automatically.
    ════════════════════════════════════════════════════════════ */
 const QUEUE_KEY          = 'sendQueue';
-const QUEUE_RETRY_MS     = 30000;   // background sweep interval
+const QUEUE_RETRY_MS     = 10000;   // background sweep interval (was 30s — too slow for a 100+ meter round)
 const QUEUE_MAX_ATTEMPTS = 5;       // after this it waits for a manual push
+const QUEUE_BATCH_SIZE   = 25;      // records per saveRecordsBatch call
 
 let sendQueue = [];
 let _queueTimer = null;
@@ -3677,6 +4318,12 @@ function loadQueue(){
     const raw = lsGetRaw(QUEUE_KEY);
     sendQueue = raw ? (JSON.parse(raw) || []) : [];
   } catch(e){ sendQueue = []; }
+  // App open and login are a fresh start for items that failed for transient
+  // reasons (network, or a session that expired mid-round — the server rejects
+  // the whole batch, which counted against every reading in it). Without this
+  // they stayed parked after re-login and only a manual "ส่งเดี๋ยวนี้" sent
+  // them. Records the server itself rejected stay parked for a manual push.
+  sendQueue.forEach(q => { if(!q.rejected) q.attempts = 0; });
   return sendQueue;
 }
 function persistQueue(){
@@ -3690,33 +4337,110 @@ function enqueueRecord(rec){
   flushQueue();               // fire and forget
 }
 
-/* Try to send everything waiting. Serialised: the API queue upstream already
-   funnels calls one at a time, and sending in order keeps a meter's readings
-   in the order they were taken. */
+/* Set when the backend answers "Unknown action" to saveRecordsBatch — i.e. the
+   frontend was deployed before the Code.gs that adds the batch endpoint. From
+   then on this session sends one record at a time via the original saveRecord
+   endpoint, so readings keep reaching the Sheet regardless of deploy order
+   instead of piling up and parking in the queue. */
+let _batchUnsupported = false;
+/* Queue saves go out with no apiPost-level retries. The queue already retries
+   on its own timer and the server de-duplicates by id, so the extra attempts
+   bought nothing — but each one held the single foreground lane for up to the
+   30 s save timeout, so one failing batch could make a login or chart wait
+   ~90 s behind it. With 0, that wait is at most one timeout. */
+const QUEUE_SAVE_RETRIES = 0;
+async function _sendOneLegacy(it){
+  const r = it.rec;
+  const payload = { id:r.id, meterId:r.meterId, meterName:r.meterName, zone:r.zone,
+                    date:r.date, time:r.time, kwh:r.kwh, user:r.user, note:r.note,
+                    ts:r.ts, editedTs:'', editedBy:'' };
+  // retries = 0: the queue is the retry loop (see QUEUE_SAVE_RETRIES).
+  const res = await apiPost({ action:'saveRecord', record:payload, token: sessionToken }, QUEUE_SAVE_RETRIES);
+  if(!res || res.success === false) throw new Error((res && res.error) || 'บันทึกไม่สำเร็จ');
+}
+
+/* Send everything waiting, oldest first, in batches of QUEUE_BATCH_SIZE (one
+   saveRecordsBatch call each). Batches go out one after another, so a meter's
+   readings still reach the Sheet in the order they were taken. */
 async function flushQueue(manual){
   if(_queueRunning) return;
   if(!sendQueue.length) return;
   if(!sessionToken){ renderQueueBanner(); return; }
   _queueRunning = true;
   try{
+    // Send in batches instead of one record per round-trip. A 100+ meter round
+    // used to fire 100+ serial /exec calls (minutes total), so the tail never
+    // reached the server before the app closed. One batch call carries many
+    // records; the server returns a per-record result so we drop exactly the
+    // saved/duplicate ones and keep only real failures queued.
     while(sendQueue.length){
-      const item = sendQueue[0];
-      if(!manual && item.attempts >= QUEUE_MAX_ATTEMPTS) break;   // parked; wait for a manual push
+      if(_batchUnsupported){
+        const it = sendQueue.find(q => manual || q.attempts < QUEUE_MAX_ATTEMPTS);   // skip parked, same as batch mode
+        if(!it) break;
+        try{
+          await _sendOneLegacy(it);
+          sendQueue.splice(sendQueue.indexOf(it), 1); persistQueue();
+          invalidateSummaryCache('saveRecord:'+it.rec.meterId+'@'+it.rec.date);
+        }catch(e){
+          it.attempts++; it.lastError = e.message || 'error'; persistQueue();
+          break;
+        }
+        continue;
+      }
+      // Take a window of not-yet-parked items from the front.
+      const batch = [];
+      for(let i=0; i<sendQueue.length && batch.length<QUEUE_BATCH_SIZE; i++){
+        // Skip parked items instead of stopping at them. Stopping meant one reading
+        // the server keeps rejecting (e.g. its meter was removed from _METERS)
+        // blocked every reading queued after it — they never sent and were lost
+        // when the app closed. Parked items wait for a manual push.
+        if(!manual && sendQueue[i].attempts >= QUEUE_MAX_ATTEMPTS) continue;
+        batch.push(sendQueue[i]);
+      }
+      if(!batch.length) break;   // nothing sendable left (all parked)
       try{
-        const r = item.rec;
-        const payload = { id:r.id, meterId:r.meterId, meterName:r.meterName, zone:r.zone,
-                          date:r.date, time:r.time, kwh:r.kwh, user:r.user, note:r.note,
-                          ts:r.ts, editedTs:'', editedBy:'' };
-        const res = await apiPost({ action:'saveRecord', record:payload, token: sessionToken });
+        const records = batch.map(it => {
+          const r = it.rec;
+          return { id:r.id, meterId:r.meterId, meterName:r.meterName, zone:r.zone,
+                   date:r.date, time:r.time, kwh:r.kwh, user:r.user, note:r.note,
+                   ts:r.ts, editedTs:'', editedBy:'' };
+        });
+        const res = await apiPost({ action:'saveRecordsBatch', records: records, token: sessionToken }, QUEUE_SAVE_RETRIES);
+        if(res && res.success === false && /Unknown action/i.test(res.error || '')){
+          _batchUnsupported = true;   // backend predates the batch endpoint — fall back, don't count as a failure
+          continue;
+        }
         if(!res || res.success === false) throw new Error((res && res.error) || 'บันทึกไม่สำเร็จ');
-        sendQueue.shift();
+        // Drop the records the server confirmed (saved or duplicate); keep the
+        // rest queued with an incremented attempt count.
+        const byId = {};
+        (res.results || []).forEach(r => { if(r && r.id) byId[String(r.id)] = r; });
+        const affectedMonths = {};
+        for(const it of batch){
+          const rr = byId[String(it.rec.id)];
+          if(rr && rr.success){
+            const idx = sendQueue.indexOf(it);
+            if(idx >= 0) sendQueue.splice(idx, 1);
+            affectedMonths[it.rec.meterId+'@'+it.rec.date] = true;
+          } else {
+            // The server looked at this record and rejected it (validation,
+            // unknown meter). Retrying unchanged can't succeed, so park it now
+            // rather than letting it take a batch slot for 5 more sweeps.
+            it.attempts = QUEUE_MAX_ATTEMPTS;
+            it.rejected = true;   // server-side rejection — stays parked across reloads (see loadQueue)
+            it.lastError = (rr && rr.error) || 'บันทึกไม่สำเร็จ';
+          }
+        }
         persistQueue();
-        invalidateSummaryCache('saveRecord:'+r.meterId+'@'+r.date);
+        Object.keys(affectedMonths).forEach(k => invalidateSummaryCache('batch:'+k));
+        // If nothing in this window got removed, stop to avoid a tight loop.
+        if(batch.every(it => sendQueue.indexOf(it) >= 0)) break;
       }catch(e){
-        item.attempts++;
-        item.lastError = e.message || 'error';
+        // Whole-batch failure (network/timeout): bump attempts on the window
+        // and stop; the timer retries.
+        batch.forEach(it => { it.attempts++; it.lastError = e.message || 'error'; });
         persistQueue();
-        break;                 // stop the sweep; the timer will come back
+        break;
       }
     }
   } finally {
@@ -3737,11 +4461,15 @@ function renderQueueBanner(){
   const stuck = sendQueue.filter(q => q.attempts >= QUEUE_MAX_ATTEMPTS).length;
   el.style.display = 'block';
   el.className = stuck ? 'warn-box' : 'info-box';
-  const err = stuck ? ` · ล่าสุด: ${esc(sendQueue[0].lastError || '')}` : '';
+  // Name the meter and reason of the first stuck item (it is no longer
+  // necessarily at the front, since sending now continues past parked items).
+  const firstStuck = stuck ? sendQueue.find(q => q.attempts >= QUEUE_MAX_ATTEMPTS) : null;
+  const err = firstStuck ? ` · ${esc(firstStuck.rec.meterId || '')}: ${esc(firstStuck.lastError || '')}` +
+                           (stuck > 1 ? ` (และอีก ${stuck-1} รายการ)` : '') : '';
   el.innerHTML =
     (stuck ? '⚠️ ' : '⏳ ') +
     `<strong>รอส่ง ${sendQueue.length} รายการ</strong>` +
-    (stuck ? ' — ส่งไม่สำเร็จ' + err : ' — กำลังส่งเบื้องหลัง') +
+    (stuck ? ` — ส่งไม่สำเร็จ ${stuck} รายการ` + err : ' — กำลังส่งเบื้องหลัง') +
     ` <button class="btn btn-yellow btn-sm" style="margin-left:8px" onclick="flushQueue(true)">📤 ส่งเดี๋ยวนี้</button>` +
     ` <button class="btn btn-ghost btn-sm" onclick="showQueueDetail()">ดูรายการ</button>`;
 }
@@ -4115,7 +4843,7 @@ async function loadReport(){
   // ดึงเพิ่ม 7 วันหลังสิ้นเดือน เพื่อให้วันสุดท้ายคำนวณ used ได้
   const extDate  = new Date(parseInt(y), parseInt(m)-1, lastDay+7);
   const dateTo   = `${extDate.getFullYear()}-${String(extDate.getMonth()+1).padStart(2,'0')}-${String(extDate.getDate()).padStart(2,'0')}`;
-  document.getElementById('report-area').innerHTML = '<div class="section-empty">⏳ กำลังโหลด...</div>';
+  document.getElementById('report-area').innerHTML = chartSkeletonHTML();
   try{
     const res = await getSummaryCached(dateFrom, dateTo, 'day');
     if(thisReq !== reportReqId) return; // stale request — discard
@@ -4125,7 +4853,7 @@ async function loadReport(){
     renderZoneReport();
   }catch(e){
     if(thisReq !== reportReqId) return;
-    document.getElementById('report-area').innerHTML = `<div class="warn-box">❌ ${e.message}</div>`;
+    document.getElementById('report-area').innerHTML = `<div class="warn-box">❌ ${esc(e.message)}</div>`;
   }
 }
 
@@ -4133,6 +4861,12 @@ async function loadReport(){
 function renderReport(month, lastDay){
   const area = document.getElementById('report-area');
   if(!reportRaw.length){ area.innerHTML = '<div class="section-empty">📭 ไม่มีข้อมูลเดือนนี้</div>'; return; }
+  // Cache the group lists once. _grpMain/_grpUtil each run a
+  // .filter() over every group, and they were being called inside the per-day
+  // loop (and again per header/cell) — hundreds of redundant filters on a
+  // 30-day × many-group report. Computing them once here is the main speedup.
+  const _grpMain = reportGroupsMain();
+  const _grpUtil = reportGroupsUtil();
   const _plMap = perfLabel('buildMeterDayMap'); perfStart(_plMap);
   const meterMap = buildMeterDayMap();
   perfEnd(_plMap);
@@ -4143,19 +4877,19 @@ function renderReport(month, lastDay){
   const _plRows = perfLabel('renderReport:rowsCompute'); perfStart(_plRows);
   const rows = days.map(dateStr => {
     const cells = {};
-    reportGroupsMain().forEach(c => cells[c.key] = sumGroupOnDay(meterMap, c, dateStr, allDates));
-    reportGroupsUtil().forEach(c => cells[c.key] = sumGroupOnDay(meterMap, c, dateStr, allDates));
+    _grpMain.forEach(c => cells[c.key] = sumGroupOnDay(meterMap, c, dateStr, allDates));
+    _grpUtil.forEach(c => cells[c.key] = sumGroupOnDay(meterMap, c, dateStr, allDates));
     let utilTotal = 0, utilHas = false;
-    reportGroupsUtil().forEach(c => { if(cells[c.key] !== null){ utilTotal += cells[c.key]; utilHas = true; } });
+    _grpUtil.forEach(c => { if(cells[c.key] !== null){ utilTotal += cells[c.key]; utilHas = true; } });
     cells['UTILITY'] = utilHas ? utilTotal : null;
     let mainTotal = 0, mainHas = false;
-    reportGroupsMain().forEach(c => { if(cells[c.key] !== null){ mainTotal += cells[c.key]; mainHas = true; } });
+    _grpMain.forEach(c => { if(cells[c.key] !== null){ mainTotal += cells[c.key]; mainHas = true; } });
     cells['TOTAL'] = (mainHas || utilHas) ? (mainTotal + utilTotal) : null;
     return { dateStr, cells };
   });
 
   const totals = {};
-  [...reportGroupsMain().map(c=>c.key), ...reportGroupsUtil().map(c=>c.key), 'UTILITY','TOTAL'].forEach(k => {
+  [..._grpMain.map(c=>c.key), ..._grpUtil.map(c=>c.key), 'UTILITY','TOTAL'].forEach(k => {
     totals[k] = rows.reduce((a,r) => a + (r.cells[k]||0), 0);
   });
   perfEnd(_plRows);
@@ -4164,13 +4898,13 @@ function renderReport(month, lastDay){
   const fmtCell = v => v === null ? '<span style="color:var(--text-3)">—</span>' : Math.round(v).toLocaleString();
   const MN = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   const [yy,mm] = month.split('-');
-  const headMain = reportGroupsMain().map(c => `<th style="text-align:right;padding:6px 8px;min-width:64px">${c.name}</th>`).join('');
-  const headUtil = reportGroupsUtil().map(c => `<th style="text-align:right;padding:6px 8px;min-width:64px;color:var(--purple)">${c.name}</th>`).join('');
+  const headMain = _grpMain.map(c => `<th style="text-align:right;padding:6px 8px;min-width:64px">${c.name}</th>`).join('');
+  const headUtil = _grpUtil.map(c => `<th style="text-align:right;padding:6px 8px;min-width:64px;color:var(--purple)">${c.name}</th>`).join('');
 
   const bodyRows = rows.map(r => {
     const dnum = parseInt(r.dateStr.split('-')[2]);
-    const mainCells = reportGroupsMain().map(c => `<td style="text-align:right;padding:5px 8px">${fmtCell(r.cells[c.key])}</td>`).join('');
-    const utilCells = reportGroupsUtil().map(c => `<td style="text-align:right;padding:5px 8px;color:var(--text-2)">${fmtCell(r.cells[c.key])}</td>`).join('');
+    const mainCells = _grpMain.map(c => `<td style="text-align:right;padding:5px 8px">${fmtCell(r.cells[c.key])}</td>`).join('');
+    const utilCells = _grpUtil.map(c => `<td style="text-align:right;padding:5px 8px;color:var(--text-2)">${fmtCell(r.cells[c.key])}</td>`).join('');
     return `<tr>
       <td style="padding:5px 8px;font-weight:600;color:var(--accent);position:sticky;left:0;background:var(--surface-1)">${dnum}/${parseInt(mm)}</td>
       ${mainCells}
@@ -4180,8 +4914,8 @@ function renderReport(month, lastDay){
     </tr>`;
   }).join('');
 
-  const totMain = reportGroupsMain().map(c => `<td style="text-align:right;padding:7px 8px;font-weight:700">${Math.round(totals[c.key]).toLocaleString()}</td>`).join('');
-  const totUtil = reportGroupsUtil().map(c => `<td style="text-align:right;padding:7px 8px;font-weight:700;color:var(--purple)">${Math.round(totals[c.key]).toLocaleString()}</td>`).join('');
+  const totMain = _grpMain.map(c => `<td style="text-align:right;padding:7px 8px;font-weight:700">${Math.round(totals[c.key]).toLocaleString()}</td>`).join('');
+  const totUtil = _grpUtil.map(c => `<td style="text-align:right;padding:7px 8px;font-weight:700;color:var(--purple)">${Math.round(totals[c.key]).toLocaleString()}</td>`).join('');
 
   area.innerHTML = `
     <div style="font-size:13px;font-weight:700;margin-bottom:8px;text-align:center">รายละเอียดปริมาณการใช้ไฟฟ้าแต่ละ SUBSTATION · ${MN[parseInt(mm)]} ${yy}</div>
@@ -4228,7 +4962,7 @@ async function loadZoneReport(){
     renderZoneReport();
   }catch(e){
     if(thisReq !== zoneReportReqId) return;
-    area.innerHTML = `<div class="warn-box">❌ ${e.message}</div>`;
+    area.innerHTML = `<div class="warn-box">❌ ${esc(e.message)}</div>`;
   }
 }
 
@@ -4237,12 +4971,19 @@ function populateZoneReportSelect(){
   const sel = document.getElementById('zone-rep-select');
   if(!sel) return;
   const prev = sel.value;
-  // นับจำนวน sub ต่อ zone จาก subs จริง (ไม่ใช้ zone ที่ไม่มี sub อยู่เลย กันตัวเลือกว่างเปล่า)
-  const counts = {};
-  subs.forEach(s => { const cat = zoneName(s.zone); counts[cat] = (counts[cat]||0) + 1; });
-  const cats = reportGroups.filter(g => counts[g.name] > 0).map(g => ({ name:g.name, icon:g.icon||'📦' }));
-  sel.innerHTML = cats.map(c => `<option value="${c.name}">${c.icon} ${c.name} (${counts[c.name]})</option>`).join('');
-  if(prev && counts[prev]) sel.value = prev;
+  // Show every report group that actually has meters, counted from the group's
+  // own meter list (group.meters) rather than from meter.zone. A group's
+  // membership is defined by group.meters — meter.zone is a separate label that
+  // doesn't always equal the group key/name, so counting by zone dropped any
+  // group whose meters carried a different zone string, leaving the dropdown
+  // short. A meter still present in subs is what counts.
+  const known = {};
+  subs.forEach(s => { known[s.id] = true; });
+  const cats = reportGroups
+    .map(g => ({ name:g.name, icon:g.icon||'📦', count:(g.meters||[]).filter(id => known[id]).length }))
+    .filter(g => g.count > 0);
+  sel.innerHTML = cats.map(c => `<option value="${c.name}">${c.icon} ${c.name} (${c.count})</option>`).join('');
+  if(prev && cats.some(c => c.name === prev)) sel.value = prev;
 }
 
 /* ── renderZoneReport ── */
@@ -4254,7 +4995,12 @@ function renderZoneReport(){
   const month = document.getElementById('zone-rep-month')?.value;
   if(!month){ area.innerHTML = '<div class="section-empty">เลือกเดือนก่อน</div>'; zoneReportComputed = null; return; }
 
-  const zoneSubs = subs.filter(s => zoneName(s.zone) === selectedZone);
+  // selectedZone is a group NAME (from the dropdown). Resolve it to that group's
+  // meter list and pull those meters from subs — consistent with how the
+  // dropdown is now built (by group.meters, not meter.zone).
+  const selGroup = reportGroups.find(g => g.name === selectedZone);
+  const selIds = selGroup ? (selGroup.meters || []) : [];
+  const zoneSubs = subs.filter(s => selIds.indexOf(s.id) >= 0);
   if(!zoneSubs.length){ area.innerHTML = '<div class="section-empty">ไม่มีมิเตอร์ใน Zone นี้</div>'; zoneReportComputed = null; return; }
 
   const [y,m] = month.split('-');
@@ -4402,7 +5148,7 @@ async function exportFullTemplateExcel(){
   // ข้อแลกเปลี่ยนที่ควรทราบ: ถ้ามีการบันทึกค่าใหม่จาก "เครื่องอื่น" หลังจากหน้านี้
   // โหลดเสร็จ (ไม่ผ่าน invalidateSummaryCache บนเครื่องนี้) การข้าม loadReport() จะ
   // export ข้อมูลที่ยังไม่ใหม่ที่สุด — เป็นทเรดออฟความเร็ว/ความสดที่มีอยู่แล้วทั่วแอป
-  // (หน้า "รายงาน" เองก็ไม่ auto-refresh ข้ามเครื่องเช่นกัน) ไม่ใช่ปัญหาใหม่จาก patch นี้
+  // (หน้า "รายงาน" เองก็ไม่ auto-refresh ข้ามเครื่องเช่นกัน)
   if(!reportComputed || reportComputed.month !== month){
     await loadReport();
   }
@@ -4417,7 +5163,7 @@ async function exportFullTemplateExcel(){
 
   try{
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Substation SR Plant Logger';
+    workbook.creator = SITE_NAME + ' ' + SITE_CODE + ' Plant Logger';
     workbook.created = new Date();
 
     await buildDataSheetExcelJS(workbook, reportComputed);
@@ -4458,12 +5204,12 @@ async function exportFullTemplateExcel(){
    ════════════════════════════════════════════════════════════ */
 const VAT_RATE = 0.07;   // statutory, not user-editable
 
-const COST_SUPPLIES = [
-  { key:'MEA69', label:'69kV — โรงงาน',
-    onpk:'PM156-ONPK', offpk:'PM156-OFFPK', demOn:'PM156-DEM-ONPK' },
-  { key:'MEA24', label:'24kV — Old Canteen',
-    onpk:'PM974-ONPK', offpk:'PM974-OFFPK', demOn:'PM974-DEM-ONPK' }
-];
+/* GW: the cost page is deferred — no supply points are configured yet, and
+   the drawer entry and 'cost' tab permission are left out until they are.
+   To enable: list the GW supply meters here in the same shape as the SR app
+   ({ key, label, onpk, offpk, demOn }), restore the drawer button and add
+   'cost' back to ROLE_TABS. */
+const COST_SUPPLIES = [];
 
 const TARIFF_FIELDS = [
   { k:'rateOn',  label:'ค่าพลังงาน On Peak',      unit:'บาท/kWh' },
@@ -4572,7 +5318,18 @@ function buildCostMonthOptions(){
     const p = m.split('-');
     return '<option value="' + m + '">' + MN[parseInt(p[1])] + ' ' + p[0] + '</option>';
   }).join('');
-  if(prev && months.indexOf(prev) >= 0) sel.value = prev;
+  // Default to the newest month that actually HAS data, not the newest option
+  // (the list includes the current month + next two for entering rates ahead of
+  // readings, so the very first option is usually an empty future month —
+  // landing there showed "ไม่มีข้อมูลเดือนนี้" and looked like cost wasn't
+  // working). Keep the user's prior pick if still valid.
+  if(prev && months.indexOf(prev) >= 0){
+    sel.value = prev;
+  } else if(availableMonths && availableMonths.length){
+    sel.value = availableMonths[0];   // availableMonths is newest-first, data-backed
+  } else if(months.length){
+    sel.value = months[months.length - 1];   // fallback: oldest listed
+  }
 }
 
 let costRaw = [];
@@ -4580,7 +5337,14 @@ let costRaw = [];
 async function loadCostData(){
   const box = document.getElementById('cost-body');
   if(!box) return;
-  if(appMode !== 'admin'){ box.innerHTML = '<div class="section-empty">เฉพาะแอดมิน</div>'; return; }
+  // Viewers may see the estimate (backend getTariffs/getMonthlySummary allow
+  // report access); only editing the rates is admin-only.
+  if(appMode !== 'admin' && appMode !== 'viewer'){ box.innerHTML = '<div class="section-empty">เฉพาะแอดมินและผู้ดูรายงาน</div>'; return; }
+  // Ensure tariff rates are loaded before computing. The Calculate button calls
+  // this directly (not via the onTabCost chain that loads tariffs first), so
+  // without this a fresh click — or a tab where the initial tariff load hadn't
+  // finished — computed with no rates and showed every rate as "—" / 0.
+  if(!tariffRows || !tariffRows.length) await loadTariffs();
   buildCostMonthOptions();
   const sel = document.getElementById('cost-month');
   const month = sel ? sel.value : '';
@@ -4605,7 +5369,12 @@ async function loadCostData(){
 
 /* Energy used across the month for a totalising meter: last reading minus
    first. Returns null when the meter has no readings in the window, so the UI
-   can show "—" rather than a confident zero. */
+   can show "—" rather than a confident zero.
+   Deliberately NOT the Summary method (which runs to the first reading after
+   month end): this page is a reference estimate only, not a match for the MEA
+   bill, whose reading cycle doesn't follow calendar months anyway. Leaving out
+   the final day's usage is accepted — the owner decided not to align the two.
+   The page says so to users ("หน่วยใช้ผลต่างต้น-ปลายเดือน"). */
 function costEnergy(meterId, month){
   const rows = costRaw.filter(r => r.meterId === meterId && String(r.period).slice(0,7) === month);
   if(!rows.length) return null;
@@ -4706,6 +5475,8 @@ function renderCost(month){
    APEXCHARTS SYSTEM
    ════════════════════════════════════════════════════════════ */
 let subChartInst = null;
+let _subChartStructKey = null;   // 'type:seriesCount' of the live chart, for safe updateOptions reuse
+let subReqId = 0;                // guards against out-of-order renders (rapid meter/period switching)
 let g9ChartInst = null;
 let cmpChartInst = null;
 
@@ -4735,6 +5506,154 @@ function getQuickRange(key){
   return ['',''];
 }
 
+/* Quick-range that respects the current period. The three segment buttons mean
+   different spans depending on whether you're looking at days, months, or
+   years — otherwise "this month" while viewing by-month shows a single bar and
+   looks broken. slot is 0/1/2 (the three buttons left→right); the labels are
+   kept in sync by segmentLabelsFor(). */
+function getQuickRangeForPeriod(period, slot){
+  var today = ymdLocal();
+  var t = new Date(today+'T00:00:00');
+  var fmt = function(dt){ return ymdLocal(dt); };
+  var y = t.getFullYear(), m = t.getMonth();
+  if(period === 'day'){
+    if(slot===0) return [today.slice(0,8)+'01', today];                                  // this month
+    if(slot===1){ var f=new Date(y,m-1,1),l=new Date(y,m,0); return [fmt(f),fmt(l)]; }    // last month
+    var f3=new Date(t); f3.setMonth(f3.getMonth()-2); f3.setDate(1); return [fmt(f3),today]; // 3 months
+  }
+  if(period === 'month'){
+    // Full calendar year for this/last year (Jan–Dec) so the chart always
+    // shows all 12 months of the chosen year, empty ones included.
+    if(slot===0) return [y+'-01-01', y+'-12-31'];                                         // this year
+    if(slot===1) return [(y-1)+'-01-01', (y-1)+'-12-31'];                                 // last year
+    return [(y-2)+'-01-01', y+'-12-31'];                                                  // 3 years
+  }
+  // year
+  if(slot===0) return [(y-2)+'-01-01', today];                                            // 3 years
+  if(slot===1) return [(y-4)+'-01-01', today];                                            // 5 years
+  return ['', today];                                                                     // all
+}
+function segmentLabelsFor(period){
+  if(period === 'day')   return ['เดือนนี้','เดือนก่อน','3 เดือน'];
+  if(period === 'month') return ['ปีนี้','ปีก่อน','3 ปี'];
+  return ['3 ปี','5 ปี','ทั้งหมด'];
+}
+/* Re-labels a segment control and applies the slot that's currently active
+   (default slot 0) for the new period. Called whenever period changes. */
+function applySegmentForPeriod(segId, period, applyFn){
+  var seg = document.getElementById(segId);
+  if(!seg) return;
+  var labels = segmentLabelsFor(period);
+  var btns = seg.querySelectorAll('button');
+  var activeSlot = 0;
+  btns.forEach(function(b,i){ if(b.classList.contains('on')) activeSlot=i; });
+  btns.forEach(function(b,i){ if(labels[i]!==undefined) b.textContent = labels[i]; b.setAttribute('data-slot', i); });
+  // re-apply the active slot's range under the new period
+  applyFn(activeSlot);
+}
+
+/* Switches the from/to range inputs between date / month / year controls to
+   match the period, and converts whatever value they hold so it stays valid
+   for the new input type — a <input type=date> value "2026-09-15" becomes
+   "2026-09" for month, "2026" for year, and back to a real day on the way
+   down. Without the conversion the browser silently blanks a value that
+   doesn't fit the new type, which looked like the range had been lost. The
+   YEAR case has no native input, so it swaps in a plain text field range —
+   two 4-digit years — kept minimal on purpose. Prefix is 'cmp' or 'sub'. */
+function _fitRangeToPeriod(v, period){
+  v = String(v||'');
+  if(period === 'month') return v.slice(0,7);
+  if(period === 'year')  return v.slice(0,4);
+  return v;
+}
+/* Y-axis numbers as plain comma-grouped integers (10,000 — not "10K"). The
+   readings are already in kWh, so a "K" suffix reads as ambiguous unit-on-unit
+   ("10K" looks like it could mean 10 kWh or 10,000). Full numbers with commas
+   are unambiguous; the axis has room for them. */
+/* Rounds a max value UP to a "nice" round number so the axis ticks land on
+   clean figures (250,000 rather than 229,658). Uses a fine ladder of steps
+   (1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10 × the power of ten) so the top of the axis
+   stays close to the peak instead of jumping, e.g. 219k → 500k. */
+function _niceCeil(v){
+  v = Number(v) || 0;
+  if(v <= 0) return 0;
+  var mag = Math.pow(10, Math.floor(Math.log10(v)));
+  var norm = v / mag;                     // 1..10
+  // Finer steps than 1/2/5 so the axis doesn't overshoot the data (219k would
+  // jump to 500k on a 1/2/5 scale, squashing the bars); 2.5/3/4 keep the top
+  // close to the peak while still landing on a round tick.
+  var step;
+  if(norm <= 1)      step = 1;
+  else if(norm <= 1.5) step = 1.5;
+  else if(norm <= 2) step = 2;
+  else if(norm <= 2.5) step = 2.5;
+  else if(norm <= 3) step = 3;
+  else if(norm <= 4) step = 4;
+  else if(norm <= 5) step = 5;
+  else if(norm <= 6) step = 6;
+  else if(norm <= 8) step = 8;
+  else               step = 10;
+  return step * mag;
+}
+function _fmtAxisNum(v){
+  return Math.round(Number(v) || 0).toLocaleString();
+}
+function _normRangeStart(v){
+  v = String(v||'');
+  if(/^\d{4}$/.test(v)) return v+'-01-01';
+  if(/^\d{4}-\d{2}$/.test(v)) return v+'-01';
+  return v;
+}
+function _normRangeEnd(v){
+  v = String(v||'');
+  if(/^\d{4}$/.test(v)) return v+'-12-31';
+  if(/^\d{4}-\d{2}$/.test(v)){ var p=v.split('-'); var last=new Date(+p[0], +p[1], 0).getDate(); return v+'-'+String(last).padStart(2,'0'); }
+  return v;
+}
+function setRangeInputType(prefix, period){
+  var fromEl = document.getElementById(prefix+'-from');
+  var toEl   = document.getElementById(prefix+'-to');
+  if(!fromEl || !toEl) return;
+  var wantType = period === 'day' ? 'date' : period === 'month' ? 'month' : 'text';
+  [fromEl, toEl].forEach(function(el){
+    var v = el.value || '';
+    if(el.type !== wantType){
+      // convert current value to the granularity of the new type
+      if(wantType === 'month')      v = v.slice(0,7);                       // yyyy-mm-dd → yyyy-mm ; yyyy → yyyy (browser fills)
+      else if(wantType === 'text')  v = v.slice(0,4);                       // → yyyy
+      else if(wantType === 'date'){                                         // widen back to a real day
+        if(/^\d{4}-\d{2}$/.test(v)) v = v + '-01';
+        else if(/^\d{4}$/.test(v))  v = v + '-01-01';
+      }
+      el.type = wantType;
+      if(wantType === 'text'){ el.placeholder = 'ปี (พ.ศ.ค.ศ. เช่น 2026)'; el.setAttribute('inputmode','numeric'); el.maxLength = 4; }
+      else { el.removeAttribute('placeholder'); el.removeAttribute('inputmode'); el.removeAttribute('maxLength'); }
+    }
+    el.value = v;
+  });
+}
+
+
+/* Cache for aggregateRecords keyed by meter+period+range+data-signature.
+   Switching bar<->line or toggling avg/holiday re-renders the chart but does
+   NOT change the aggregated buckets, so recomputing them on every toggle was
+   wasted work. The signature (count + last id + last kwh) changes whenever the
+   underlying records do (refresh, edit, delete), so a stale aggregate is never
+   served after the data moves. Cleared wholesale when records are reloaded. */
+let _aggCache = {};
+function _aggSignature(recs){
+  if(!recs.length) return '0';
+  const last = recs[recs.length - 1];
+  return recs.length + ':' + (last.id || '') + ':' + (last.kwh || '');
+}
+function aggregateRecordsCached(recs, period, dateFrom, dateTo, meterId){
+  const key = meterId + '|' + period + '|' + dateFrom + '|' + dateTo + '|' + _aggSignature(recs);
+  if(_aggCache[key]) return _aggCache[key];
+  const out = aggregateRecords(recs, period, dateFrom, dateTo);
+  _aggCache[key] = out;
+  return out;
+}
+
 function aggregateRecords(recs, period, dateFrom, dateTo){
   var MN = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   var fmt = function(dt){ return ymdLocal(dt); };
@@ -4756,7 +5675,7 @@ function aggregateRecords(recs, period, dateFrom, dateTo){
       var ds = fmt(cur);
       var p = ds.split('-').map(Number);
       var val = byDate[ds] ? byDate[ds].used : 0;
-      result.push({ label:p[2]+'/'+p[1], value:val, date:ds, hol:getDayType(ds)==='holiday' });
+      result.push({ label:p[2]+'/'+p[1], value:val, date:ds, hol:getDayType(ds)==='holiday', hasData: !!byDate[ds] });
       cur.setDate(cur.getDate()+1);
     }
     return result;
@@ -4779,7 +5698,7 @@ function aggregateRecords(recs, period, dateFrom, dateTo){
     var endD = new Date(ep[0], ep[1]-1, 1);
     while(curD <= endD){
       var key = curD.getFullYear()+'-'+String(curD.getMonth()+1).padStart(2,'0');
-      result.push({ label:MN[curD.getMonth()+1]+' '+curD.getFullYear(), value:byM[key]||0, date:key });
+      result.push({ label:MN[curD.getMonth()+1]+' '+curD.getFullYear(), value:byM[key]||0, date:key, hasData: byM[key] !== undefined });
       curD.setMonth(curD.getMonth()+1);
     }
     return result;
@@ -4791,8 +5710,130 @@ function aggregateRecords(recs, period, dateFrom, dateTo){
     byY[y] += parseFloat(r.used)||0;
   });
   return Object.entries(byY).sort(function(a,b){return a[0]-b[0];}).map(function(e){
-    return { label:e[0], value:e[1], date:e[0] };
+    return { label:e[0], value:e[1], date:e[0], hasData:true };
   });
+}
+
+/* Shared by renderSubChart and renderCmpChart — everything from "here is a
+   list of {label, value, hol} points" onward is identical between the two
+   charts. Before this, the per-meter chart was missing the unit label on the
+   Y axis and the tick-spacing limit that the group chart had — a genuine
+   divergence bug, not a style choice, caused by the two functions having
+   been built and hand-edited separately over several sessions. Routing both
+   through one function makes that class of bug structurally impossible: a
+   fix here is a fix for both charts, always, because there is only one
+   "here". The two callers still each own how they FETCH their dataPoints
+   (one is a synchronous filter over `records`, the other an async server
+   summary) — that part is genuinely different and stays separate. */
+function buildChartOpts(dataPoints, state, TC){
+  const total = dataPoints.reduce((a,d) => a + d.value, 0);
+  /* Average must divide by days that actually have a reading, not by every
+     slot on the axis. "This month" spans day 1 to the last day of the month,
+     so mid-month the range includes future days with value 0 (no data yet).
+     Counting those in the denominator dragged the average down artificially.
+     hasData (set by aggregateRecords) marks the real ones; empty future/blank
+     days still render on the axis, they just don't dilute the average. */
+  const withData = dataPoints.filter(d => d.hasData);
+  const avg = withData.length ? total / withData.length : 0;
+  const pl = state.period === 'day' ? 'วัน' : state.period === 'month' ? 'เดือน' : 'ปี';
+
+  let avgWork = 0, avgHol = 0, nWork = 0, nHol = 0;
+  if(state.period === 'day'){
+    let sumWork = 0, sumHol = 0;
+    dataPoints.forEach(d => {
+      if(!d.hasData) return;   // skip empty days in both the average and the day count
+      if(d.hol){ sumHol += d.value; nHol++; } else { sumWork += d.value; nWork++; }
+    });
+    avgWork = nWork ? sumWork / nWork : 0;
+    avgHol  = nHol  ? sumHol  / nHol  : 0;
+  }
+
+  const labels = dataPoints.map(d => d.label);
+  const chartType = state.type === 'bar' ? 'bar' : 'line';
+  const useHolSplit = state.period === 'day' && state.showHol && chartType === 'bar';
+
+  /* Cap the Y axis just above the tallest value (bar or the average line,
+     whichever is higher) so bars fill the plot instead of sitting at ~40%
+     height. ApexCharts' automatic max leaves a lot of empty headroom; rounding
+     peak × 1.1 up with _niceCeil keeps a small margin and lands the top tick on
+     a round number.
+     Falls back to undefined (auto) when there's no positive value, so an
+     all-zero range still renders sanely. */
+  let _peak = 0;
+  dataPoints.forEach(d => { if(d.value > _peak) _peak = d.value; });
+  if(state.showAvg){
+    const _avgForMax = state.period === 'day' ? Math.max(avgWork, avgHol) : avg;
+    if(_avgForMax > _peak) _peak = _avgForMax;
+  }
+  const yMax = _peak > 0 ? _niceCeil(_peak * 1.1) : undefined;
+
+  let series, chartColors;
+  if(useHolSplit){
+    const workData = dataPoints.map(d => d.hol ? null : Math.round(d.value));
+    const holData  = dataPoints.map(d => d.hol ? Math.round(d.value) : null);
+    series = [
+      { name:UNIT_WORD+' (วันทำงาน)', data:workData },
+      { name:UNIT_WORD+' (วันหยุด)',  data:holData  }
+    ];
+    chartColors = [TC.green, TC.orange];
+  } else {
+    const values = dataPoints.map(d => Math.round(d.value));
+    series = [{ name:UNIT_WORD+' ('+UNIT+'/'+pl+')', data:values }];
+    chartColors = [chartType === 'bar' ? TC.green : TC.accent];
+  }
+  let strokeW = series.map(() => chartType === 'bar' ? 0 : 2.5);
+  let strokeDash = series.map(() => 0);
+  if(state.showAvg){
+    const avgLine = Math.round(state.period === 'day' ? avgWork : avg);
+    series.push({ name:'ค่าเฉลี่ย', data:dataPoints.map(() => avgLine), type:'line' });
+    chartColors.push(TC.orange+'77');
+    strokeW.push(2); strokeDash.push(5);
+  }
+
+  const chartOpts = {
+    chart:{ type:chartType, height:340, fontFamily:'IBM Plex Mono,monospace', foreColor:TC.text2,
+      stacked: useHolSplit,
+      toolbar:{ show:true, tools:{download:true,zoom:true,zoomin:true,zoomout:true,pan:true,reset:true} },
+      background:'transparent', animations:{enabled:true,speed:400} },
+    series: series,
+    /* Same reasoning on both charts: a month of daily bars is too many labels
+       for the width available, so only ~8 are drawn — every bar still shows,
+       the axis just stops trying to caption all of them. */
+    xaxis:{ categories:labels, axisBorder:{color:TC.border}, axisTicks:{show:false},
+            tickAmount: Math.min(labels.length, 8),
+            labels:{ rotate:0, rotateAlways:false, hideOverlappingLabels:true, trim:false,
+                     style:{fontSize:'11px',colors:TC.text2} } },
+    yaxis:{ title:{ text: UNIT, style:{fontSize:'12px', fontWeight:700, color:TC.text2} },
+            min: 0,
+            max: yMax,
+            tickAmount: 5,
+            forceNiceScale: true,
+            labels:{style:{fontSize:'12px',colors:TC.text2}, formatter:v => _fmtAxisNum(v)},
+            axisBorder:{show:false} },
+    grid:{ borderColor:TC.border, strokeDashArray:3, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
+    tooltip:{ theme:TC.isDark?'dark':'light', style:{fontSize:'12px'}, y:{formatter:v => v!=null?Math.round(v).toLocaleString()+' '+UNIT:'—'} },
+    colors: chartColors,
+    responsive:[{ breakpoint:640, options:{ chart:{height:300}, xaxis:{labels:{rotate:-45, rotateAlways:true, hideOverlappingLabels:true, style:{fontSize:'8px'}}}, plotOptions:{bar:{columnWidth:'80%'}} } }],
+    plotOptions:{ bar:{borderRadius:4,columnWidth:'70%'} },
+    stroke:{ width:strokeW, dashArray:strokeDash },
+    fill:{ opacity:chartType==='bar'?0.7:0.8 },
+    legend:{ show:series.length>1, fontSize:'11px', labels:{colors:TC.text2}, markers:{shape:'square',size:6} },
+    dataLabels:{ enabled:false },
+    states:{ hover:{filter:{type:'lighten',value:0.08}} }
+  };
+
+  let avgChips;
+  if(state.period === 'day' && (nWork || nHol)){
+    avgChips = '<span class="chip chip-green">เฉลี่ยวันทำงาน '+Math.round(avgWork).toLocaleString()+' '+UNIT+' ('+nWork+' วัน)</span> '+
+               '<span class="chip" style="background:rgba(251,146,60,.15);color:var(--orange);border:1px solid rgba(251,146,60,.4)">เฉลี่ยวันหยุด '+Math.round(avgHol).toLocaleString()+' '+UNIT+' ('+nHol+' วัน)</span>';
+  } else {
+    avgChips = '<span class="chip chip-green">เฉลี่ย '+Math.round(avg).toLocaleString()+' '+UNIT+'/'+pl+'</span>';
+  }
+  const summaryHtml = '<span class="chip chip-green">'+UNIT_ICON+' รวม '+Math.round(total).toLocaleString()+' '+UNIT+'</span> ' +
+    avgChips + ' ' +
+    '<span class="chip" style="background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent-border)">'+withData.length+' '+pl+'</span>';
+
+  return { chartOpts, summaryHtml };
 }
 
 var subChartState = { period:'day', type:'bar', showAvg:true, showHol:true };
@@ -4810,6 +5851,13 @@ function setSubPeriod(p){
   });
   var holBtn = document.getElementById('sub-hol');
   if(holBtn) holBtn.style.display = p==='day' ? '' : 'none';
+  // Switch inputs to match period before the segment writes range values.
+  setRangeInputType('sub', p);
+  applySegmentForPeriod('sub-segment', p, function(slot){
+    var r = getQuickRangeForPeriod(p, slot);
+    document.getElementById('sub-from').value = _fitRangeToPeriod(r[0], p);
+    document.getElementById('sub-to').value   = _fitRangeToPeriod(r[1], p);
+  });
   renderSubChart();
 }
 function setSubType(t){
@@ -4828,98 +5876,55 @@ function toggleSubOpt(opt){
   if(el) el.className = on ? 'ctrl-btn on' : 'ctrl-btn';
   renderSubChart();
 }
-function renderSubChart(){
+async function renderSubChart(){
+  var thisReq = ++subReqId;
   var meterId = document.getElementById('chart-sub').value;
   var el = document.getElementById('sub-chart-el');
   var sumEl = document.getElementById('sub-chart-summary');
   if(!meterId){ el.innerHTML='<div class="section-empty">เลือก Meter เพื่อดูกราฟ</div>'; sumEl.innerHTML=''; return; }
-  var fromVal = document.getElementById('sub-from').value || '';
-  var toVal = document.getElementById('sub-to').value || '';
+  el.innerHTML = chartSkeletonHTML();
+  var fromVal = _normRangeStart(document.getElementById('sub-from').value || '');
+  var toVal = _normRangeEnd(document.getElementById('sub-to').value || '');
   var recs = getSubRecs(meterId);
   if(fromVal) recs = recs.filter(function(r){return r.date >= fromVal;});
   if(toVal) recs = recs.filter(function(r){return r.date <= toVal;});
   if(!recs.length){ el.innerHTML='<div class="section-empty">ไม่มีข้อมูลในช่วงที่เลือก</div>'; sumEl.innerHTML=''; return; }
-  var data = aggregateRecords(recs, subChartState.period, fromVal, toVal);
+  var data = aggregateRecordsCached(recs, subChartState.period, fromVal, toVal, meterId);
   if(!data.length){ el.innerHTML='<div class="section-empty">ไม่มีข้อมูล</div>'; sumEl.innerHTML=''; return; }
   var TC = getThemeColors();
-  var total = data.reduce(function(a,d){return a+d.value;},0);
-  var avg = data.length ? total/data.length : 0;
-  var pl = subChartState.period==='day'?'วัน':subChartState.period==='month'?'เดือน':'ปี';
-  var avgWork = null, avgHol = null, nWork = 0, nHol = 0;
-  if(subChartState.period === 'day'){
-    var sumWork = 0, sumHol = 0;
-    data.forEach(function(d){
-      if(d.hol){ sumHol += d.value; nHol++; }
-      else { sumWork += d.value; nWork++; }
-    });
-    avgWork = nWork ? sumWork/nWork : 0;
-    avgHol  = nHol  ? sumHol/nHol  : 0;
-  }
-  var labels = data.map(function(d){return d.label;});
-  var chartType = subChartState.type==='bar' ? 'bar' : 'line';
-  var useHolSplit = subChartState.period==='day' && subChartState.showHol && chartType==='bar';
-  var series, chartColors, strokeW, strokeDash;
-  if(useHolSplit){
-    var workData = data.map(function(d){ return d.hol ? null : Math.round(d.value); });
-    var holData  = data.map(function(d){ return d.hol ? Math.round(d.value) : null; });
-    series = [
-      { name:''+UNIT_WORD+' (วันทำงาน)', data:workData, type:'bar' },
-      { name:''+UNIT_WORD+' (วันหยุด)',  data:holData,  type:'bar' }
-    ];
-    chartColors = [TC.green, TC.orange];
-    strokeW = [0,0]; strokeDash = [0,0];
-    if(subChartState.showAvg){
-      var avgRoundS = Math.round(avgWork);
-      series.push({ name:'ค่าเฉลี่ย', data:data.map(function(){return avgRoundS;}), type:'line' });
-      chartColors.push(TC.accent+'77'); strokeW.push(2); strokeDash.push(5);
-    }
-  } else {
-    var values = data.map(function(d){return Math.round(d.value);});
-    series = [{ name:UNIT_WORD+' ('+UNIT+'/'+pl+')', data:values, type:chartType }];
-    chartColors = [TC.green];
-    strokeW = chartType==='bar' ? [0] : [2.5]; strokeDash = [0];
-    if(subChartState.showAvg){
-      var avgRound = Math.round(subChartState.period==='day' ? avgWork : avg);
-      series.push({ name:'ค่าเฉลี่ย', data:data.map(function(){return avgRound;}), type:'line' });
-      chartColors.push(TC.accent+'77');
-      strokeW = chartType==='bar' ? [0,2] : [2.5,2]; strokeDash = [0,5];
-    }
-  }
-  var opts = {
-    chart:{ type:'bar', height:340, fontFamily:'IBM Plex Mono,monospace', foreColor:TC.text2,
-      stacked: useHolSplit,
-      toolbar:{ show:true, tools:{download:true,zoom:true,zoomin:true,zoomout:true,pan:true,reset:true} },
-      background:'transparent', animations:{enabled:true,speed:400} },
-    series: series,
-    xaxis:{ categories:labels, axisBorder:{color:TC.border}, axisTicks:{show:false}, labels:{rotate:0, rotateAlways:false, hideOverlappingLabels:true, trim:false, style:{fontSize:'10px',colors:TC.text3}} },
-    yaxis:{ labels:{style:{fontSize:'11px',colors:TC.text2}, formatter:function(v){return Math.round(v).toLocaleString();}}, axisBorder:{show:false} },
-    grid:{ borderColor:TC.border, strokeDashArray:3, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
-    tooltip:{ theme:TC.isDark?'dark':'light', style:{fontSize:'12px'}, y:{formatter:function(v){return v!=null?Math.round(v).toLocaleString()+' '+UNIT:'—';}} },
-    colors: chartColors,
-    responsive:[{ breakpoint:640, options:{ chart:{height:300}, xaxis:{labels:{rotate:-45, rotateAlways:true, hideOverlappingLabels:true, style:{fontSize:'8px'}}}, plotOptions:{bar:{columnWidth:'80%'}} } }],
-    plotOptions:{ bar:{borderRadius:4,columnWidth:'70%'} },
-    stroke:{ width:strokeW, dashArray:strokeDash },
-    fill:{ opacity:chartType==='bar'?0.7:0.8 },
-    legend:{ show:series.length>1, fontSize:'11px', labels:{colors:TC.text2}, markers:{shape:'square',size:6} },
-    dataLabels:{ enabled:false },
-    states:{ hover:{filter:{type:'lighten',value:0.08}} }
-  };
+  var built = buildChartOpts(data, subChartState, TC);
   ensureApex().then(function(){
-    safeDestroyChart(subChartInst);
-    el.innerHTML = '';
-    subChartInst = new ApexCharts(el, opts);
-    subChartInst.render();
-  }).catch(function(e){ el.innerHTML = '<div class="warn-box">❌ โหลดกราฟไม่ได้: '+(e&&e.message||'')+'</div>'; });
-  var avgChips;
-  if(subChartState.period === 'day' && (nWork || nHol)){
-    avgChips = '<span class="chip chip-green">เฉลี่ยวันทำงาน '+Math.round(avgWork).toLocaleString()+' '+UNIT+' ('+nWork+' วัน)</span> '+
-               '<span class="chip" style="background:rgba(251,146,60,.15);color:var(--orange);border:1px solid rgba(251,146,60,.4)">เฉลี่ยวันหยุด '+Math.round(avgHol).toLocaleString()+' '+UNIT+' ('+nHol+' วัน)</span>';
-  } else {
-    avgChips = '<span class="chip chip-green">เฉลี่ย '+Math.round(avg).toLocaleString()+' '+UNIT+'/'+pl+'</span>';
-  }
-  sumEl.innerHTML = '<span class="chip chip-green">'+UNIT_ICON+' รวม '+Math.round(total).toLocaleString()+' kWh</span> '+
-    avgChips + ' '+
-    '<span class="chip" style="background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent-border)">'+data.length+' '+pl+'</span>';
+    // Bail if a newer render started while ApexCharts was loading — prevents a
+    // stale meter/range (from a quick switch) overwriting the current one.
+    if(thisReq !== subReqId) return;
+    /* Reuse the existing chart instance via updateOptions when the structure
+       is unchanged — far smoother and cheaper than destroy+new+render on every
+       date-range tweak or refresh. But updateOptions cannot safely morph across
+       a chart-type change (bar<->line) or a series-count change (holiday split
+       on/off produces 1 vs 2 data series): ApexCharts leaves stale paths/state
+       behind. So we fingerprint those two structural traits and only reuse when
+       they match; otherwise fall back to a clean rebuild. The element must also
+       still belong to the current instance (not have been blanked out). */
+    var structKey = (built.chartOpts.chart.type) + ':' + built.chartOpts.series.length;
+    var canReuse = subChartInst && _subChartStructKey === structKey && el.querySelector('.apexcharts-canvas');
+    if(canReuse){
+      subChartInst.updateOptions({
+        series: built.chartOpts.series,
+        xaxis:  built.chartOpts.xaxis,
+        yaxis:  built.chartOpts.yaxis,
+        colors: built.chartOpts.colors,
+        stroke: built.chartOpts.stroke,
+        fill:   built.chartOpts.fill
+      }, false, true);   // (options, redrawPaths=false, animate=true)
+    } else {
+      safeDestroyChart(subChartInst);
+      el.innerHTML = '';
+      subChartInst = new ApexCharts(el, built.chartOpts);
+      subChartInst.render();
+      _subChartStructKey = structKey;
+    }
+  }).catch(function(e){ el.innerHTML = '<div class="warn-box">❌ โหลดกราฟไม่ได้: '+esc(e&&e.message||'')+'</div>'; });
+  sumEl.innerHTML = built.summaryHtml;
 }
 
 var g9State = { period:'day', sort:'default', showPct:false };
@@ -4932,7 +5937,7 @@ function setG9Period(p){
   document.getElementById('g9-date').style.display = p==='day' ? '' : 'none';
   document.getElementById('g9-month').style.display = p==='month' ? '' : 'none';
   document.getElementById('g9-year').style.display = p==='year' ? '' : 'none';
-  renderG9Chart();
+  renderG9ChartDebounced();
 }
 function setG9Sort(s){
   g9State.sort = s;
@@ -4940,13 +5945,13 @@ function setG9Sort(s){
     var el = document.getElementById('g9-s-'+k);
     if(el) el.className = k===s ? 'ctrl-btn green' : 'ctrl-btn';
   });
-  renderG9Chart();
+  renderG9ChartDebounced();
 }
 function toggleG9Pct(){
   g9State.showPct = !g9State.showPct;
   var el = document.getElementById('g9-pct');
   if(el) el.className = g9State.showPct ? 'ctrl-btn on' : 'ctrl-btn';
-  renderG9Chart();
+  renderG9ChartDebounced();
 }
 function navG9(dir){
   if(g9State.period === 'day'){
@@ -4962,7 +5967,7 @@ function navG9(dir){
     var el = document.getElementById('g9-year');
     el.value = String(parseInt(el.value)+dir);
   }
-  renderG9Chart();
+  renderG9ChartDebounced();
 }
 function initG9Pickers(){
   // Default the pickers to the most recent day/month we actually have loaded,
@@ -4970,9 +5975,8 @@ function initG9Pickers(){
   // one of the three that can't be typed into freely, so deriving it from
   // `records` would hard-block older years whenever the admin record window is
   // narrow. The chart data itself is fetched server-side per selected range.
-  var dates = [];
-  records.forEach(function(r){ var d = String(r.date).slice(0,10); if(d && dates.indexOf(d)<0) dates.push(d); });
-  dates.sort();
+  // Set, not indexOf — with the full history loaded this was O(records × days).
+  var dates = Array.from(new Set(records.map(function(r){ return String(r.date).slice(0,10); }).filter(Boolean))).sort();
 
   // Years that actually contain data — derived from the server-provided month
   // list, falling back to the loaded records if it hasn't arrived yet.
@@ -4991,9 +5995,28 @@ function initG9Pickers(){
     ySel.value = (prevYear && years.indexOf(prevYear) >= 0) ? prevYear : String(thisYear);
   }
 
-  if(!dates.length) return;
-  document.getElementById('g9-date').value = dates.length >= 2 ? dates[dates.length-2] : dates[dates.length-1];
-  var months = []; dates.forEach(function(d){ var m=d.slice(0,7); if(months.indexOf(m)<0) months.push(m); }); months.sort();
+  if(!dates.length){
+    /* The chart tab no longer loads the full `records` array, so derive the
+       default day from the latest available month instead of leaving the
+       picker blank (which showed nothing). Uses the last day of the newest
+       month with data, or today if that month is the current one. */
+    if(srcMonths.length){
+      var latestM = srcMonths.slice().sort()[srcMonths.length-1];
+      var now = new Date();
+      var curM = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+      var dEl = document.getElementById('g9-date');
+      if(dEl){
+        if(latestM === curM) dEl.value = ymdLocal(now);
+        else { var pp=latestM.split('-'); var last=new Date(+pp[0], +pp[1], 0).getDate(); dEl.value = latestM+'-'+String(last).padStart(2,'0'); }
+      }
+      var mEl = document.getElementById('g9-month'); if(mEl) mEl.value = latestM;
+    }
+    return;
+  }
+  // Default to the latest day that has data (the most recent reading), so the
+  // main-group chart opens on current data instead of a day back.
+  document.getElementById('g9-date').value = dates[dates.length-1];
+  var months = Array.from(new Set(dates.map(function(d){ return d.slice(0,7); }))).sort();
   document.getElementById('g9-month').value = months[months.length-1] || '';
 }
 
@@ -5013,7 +6036,7 @@ async function renderG9Chart(){
   if(g9State.period==='day'){ var pp=pick.split('-'); lbl.textContent=parseInt(pp[2])+' '+MN[parseInt(pp[1])]+' '+pp[0]; }
   else if(g9State.period==='month'){ var pp=pick.split('-'); lbl.textContent=MN[parseInt(pp[1])]+' '+pp[0]; }
   else lbl.textContent = 'ปี '+pick;
-  el.innerHTML='<div class="section-empty">⏳ กำลังคำนวณ...</div>';
+  el.innerHTML = chartSkeletonHTML();
   var dateFrom, dateTo;
   if(g9State.period==='day'){
     dateFrom = pick;
@@ -5035,7 +6058,7 @@ async function renderG9Chart(){
     var raw = res.summary || [];
     var meterMap = {};
     raw.forEach(function(r){ if(!meterMap[r.meterId]) meterMap[r.meterId]={}; meterMap[r.meterId][r.period]={firstKwh:r.firstKwh,lastKwh:r.lastKwh}; });
-    var allPeriods = []; raw.forEach(function(r){ if(allPeriods.indexOf(r.period)<0) allPeriods.push(r.period); }); allPeriods.sort();
+    var allPeriods = Array.from(new Set(raw.map(function(r){ return r.period; }))).sort();   // Set, not indexOf: O(rows) instead of O(rows × periods)
     var countPeriods;
     if(g9State.period==='day') countPeriods = [pick];
     else countPeriods = allPeriods.filter(function(p){return p.startsWith(pick);});
@@ -5074,7 +6097,14 @@ async function renderG9Chart(){
          bar is kWh, kW or cubic metres — the same chart component is used by
          both the electricity and water apps. */
       yaxis:{ title:{ text: UNIT, style:{fontSize:'12px', fontWeight:700, color:TC.text2} },
-              labels:{style:{fontSize:'12px',colors:TC.text2}, formatter:function(v){return Math.round(v).toLocaleString();}}, axisBorder:{show:false} },
+      /* Horizontal bars swap which axis object controls the visible label
+         style: the category names (declared in xaxis.categories) render on
+         the left, but ApexCharts pulls their formatting from yaxis.labels —
+         not xaxis.labels. A numeric Math.round() formatter here ran on the
+         group NAME and printed "NaN" for every row. Pass-through only.
+         (renderSubChart/renderCmpChart below are ordinary vertical bars —
+         their yaxis really is numeric, so their formatters stay as-is.) */
+              labels:{style:{fontSize:'12px',colors:TC.text2}}, axisBorder:{show:false} },
       grid:{ borderColor:TC.border, strokeDashArray:3, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
       tooltip:{ theme:TC.isDark?'dark':'light', style:{fontSize:'12px'}, y:{formatter:tooltipFmt} },
       colors:groupVals.map(function(g){return g.color;}),
@@ -5095,7 +6125,7 @@ async function renderG9Chart(){
     g9ChartInst.render();
     sumEl.innerHTML = '<span class="chip chip-green">'+UNIT_ICON+' รวม '+Math.round(total).toLocaleString()+' kWh</span> '+
       '<span class="chip" style="background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent-border)">🏭 สูงสุด: '+top.name+'</span>';
-  }catch(e){ el.innerHTML='<div class="warn-box">❌ '+e.message+'</div>'; }
+  }catch(e){ el.innerHTML='<div class="warn-box">❌ '+esc(e.message)+'</div>'; }
 }
 
 function buildCompareGroupOptions(){
@@ -5105,7 +6135,89 @@ function buildCompareGroupOptions(){
   sel.innerHTML = reportGroups.map(c => `<option value="${c.key}">${esc(c.name)}</option>`).join('')
     + '<option value="__TOTAL__">TOTAL (ทุกกลุ่ม)</option>';
   if(prev) sel.value = prev;
+  // Build the custom picker's option rows. Each row carries its key in a data
+  // attribute; clicking commits (sets the hidden <select> + redraws). The list
+  // is fully rendered up front so tapping the field shows everything instantly.
+  const items = reportGroups.map(c => ({ key:c.key, label:c.name }));
+  items.push({ key:'__TOTAL__', label:'TOTAL (ทุกกลุ่ม)' });
+  _pickerData['cmp-group-picker'] = { items, onPick: function(key){
+    sel.value = key; syncPickerLabel('cmp-group-picker'); renderCmpChartDebounced();
+  }};
+  renderPickerList('cmp-group-picker');
+  syncPickerLabel('cmp-group-picker');
 }
+
+/* ─── Custom picker component (shared by group + meter pickers) ───
+   _pickerData[id] holds {items:[{key,label}], onPick}. The three functions
+   below are generic over any picker id. */
+var _pickerData = {};
+function renderPickerList(id, filter){
+  const d = _pickerData[id]; if(!d) return;
+  const listEl = document.getElementById(id.replace('-picker','-plist'));
+  if(!listEl) return;
+  const sel = document.getElementById(id.replace('-picker',''));
+  const cur = sel ? sel.value : '';
+  const f = (filter||'').toLowerCase();
+  const rows = d.items.filter(it => !f || it.label.toLowerCase().includes(f) || it.key.toLowerCase().includes(f));
+  if(!rows.length){ listEl.innerHTML = '<div class="rd-picker-empty">ไม่พบ</div>'; return; }
+  listEl.innerHTML = rows.map(it =>
+    `<div class="rd-picker-opt${it.key===cur?' sel':''}" data-key="${esc(it.key)}" onclick="pickerChoose('${id}', this.getAttribute('data-key'))">${esc(it.label)}</div>`
+  ).join('');
+}
+function syncPickerLabel(id){
+  const d = _pickerData[id]; if(!d) return;
+  const sel = document.getElementById(id.replace('-picker',''));
+  const labelEl = document.getElementById(id.replace('-picker','-label'));
+  if(!sel || !labelEl) return;
+  const found = d.items.find(it => it.key === sel.value);
+  if(found){ labelEl.textContent = found.label; labelEl.classList.remove('placeholder'); }
+  else { labelEl.classList.add('placeholder'); }
+}
+function togglePicker(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const wasOpen = el.classList.contains('open');
+  // close any other open pickers first
+  document.querySelectorAll('.rd-picker.open').forEach(p => p.classList.remove('open'));
+  if(!wasOpen){
+    el.classList.add('open');
+    renderPickerList(id, '');
+    const s = document.getElementById(id.replace('-picker','-psearch'));
+    if(s){ s.value=''; setTimeout(()=>s.focus(), 30); }
+  }
+}
+function filterPicker(id){
+  const s = document.getElementById(id.replace('-picker','-psearch'));
+  renderPickerList(id, s ? s.value : '');
+}
+function pickerChoose(id, key){
+  const d = _pickerData[id]; if(!d) return;
+  const el = document.getElementById(id);
+  if(el) el.classList.remove('open');
+  if(d.onPick) d.onPick(key);
+}
+/* Close pickers when tapping outside. */
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.rd-picker')){
+    document.querySelectorAll('.rd-picker.open').forEach(p => p.classList.remove('open'));
+  }
+});
+
+/* Segmented range control — sets the date range AND lights the active segment.
+   Applies the slot's range for the current period (getQuickRangeForPeriod),
+   trimmed to the date/month input type. */
+function setCmpQuickSeg(slot){
+  var r = getQuickRangeForPeriod(cmpState.period, slot);
+  // Fit to the input granularity — a <input type=month> silently drops a full
+  // yyyy-mm-dd value, which left the range blank and made the chart fall back
+  // to whatever data existed (so "last year" showed this year's data).
+  document.getElementById('cmp-from').value = _fitRangeToPeriod(r[0], cmpState.period);
+  document.getElementById('cmp-to').value   = _fitRangeToPeriod(r[1], cmpState.period);
+  const seg = document.getElementById('cmp-segment');
+  if(seg) seg.querySelectorAll('button').forEach((b,i) => b.classList.toggle('on', i===slot));
+  renderCmpChartDebounced();
+}
+
 function getColIds(key){
   if(key === '__TOTAL__') return reportGroups.flatMap(c => c.meters || []);
   const col = reportGroups.find(c => c.key === key);
@@ -5121,7 +6233,7 @@ function getColIds(key){
    at the start of a billing cycle, right after the monthly reset. */
 function _isUsableReading(meterId, v){
   if(v === null || v === undefined || isNaN(v)) return false;
-  const meter = subs.find(s => s.id === meterId);
+  const meter = subById(meterId);
   const vt = meterValueType(meter);
   if(vt === 'demand') return true;          // 0 is a real value at cycle start
   return Number(v) !== 0;
@@ -5135,7 +6247,25 @@ function _isUsableReading(meterId, v){
    Lives in core, not in a module: core-tail's chart aggregation calls it, so a
    build without the Electric summary module would otherwise crash. */
 function _countsTowardEnergy(meterId){
-  return meterValueType(subs.find(s => s.id === meterId)) === 'cumulative';
+  return meterValueType(subById(meterId)) === 'cumulative';
+}
+
+/* Position of dateStr in a sorted, de-duplicated period list. indexOf() made
+   every meterUsedOnDay/meterSpanOnDay call O(days); callers invoke those per
+   (meter × day), so a year view went quadratic in days. The map is cached per
+   array object and rebuilt if the array's length changes; callers build the
+   list once, sort it, and never mutate it afterwards. */
+const _dateIdxCache = new WeakMap();
+function _dateIndex(allDates, dateStr){
+  let m = _dateIdxCache.get(allDates);
+  if(!m || m.len !== allDates.length){
+    const map = new Map();
+    allDates.forEach((d, i) => { if(!map.has(d)) map.set(d, i); });
+    m = { map, len: allDates.length };
+    _dateIdxCache.set(allDates, m);
+  }
+  const i = m.map.get(dateStr);
+  return i === undefined ? -1 : i;
 }
 
 function meterUsedOnDay(meterMap, meterId, dateStr, allDates){
@@ -5143,11 +6273,11 @@ function meterUsedOnDay(meterMap, meterId, dateStr, allDates){
   if(!cur || !_isUsableReading(meterId, cur.firstKwh)) return null;
   // Reports and charts consume this directly; demand/snapshot have no daily
   // consumption to report, so they must not produce a number here either.
-  const _vt = meterValueType(subs.find(s => s.id === meterId));
+  const sub  = subById(meterId);
+  const _vt = meterValueType(sub);
   if(_vt === 'demand' || _vt === 'snapshot') return null;
-  const sub  = subs.find(s => s.id === meterId);
   const mult = sub?.multiplier !== undefined ? parseFloat(sub.multiplier) : 1;
-  const idx = allDates.indexOf(dateStr);
+  const idx = _dateIndex(allDates, dateStr);
   for(let k = idx+1; k < allDates.length; k++){
     const next = meterMap[meterId]?.[allDates[k]];
     if(next && _isUsableReading(meterId, next.firstKwh)){
@@ -5165,7 +6295,7 @@ function meterUsedOnDay(meterMap, meterId, dateStr, allDates){
 function meterSpanOnDay(meterMap, meterId, dateStr, allDates){
   const cur = meterMap[meterId]?.[dateStr];
   if(!cur || !_isUsableReading(meterId, cur.firstKwh)) return 0;
-  const idx = allDates.indexOf(dateStr);
+  const idx = _dateIndex(allDates, dateStr);
   for(let k = idx+1; k < allDates.length; k++){
     const next = meterMap[meterId]?.[allDates[k]];
     if(next && _isUsableReading(meterId, next.firstKwh)){
@@ -5177,12 +6307,12 @@ function meterSpanOnDay(meterMap, meterId, dateStr, allDates){
   return 1;
 }
 
-var cmpState = { period:'day', type:'bar', showAvg:true };
+var cmpState = { period:'day', type:'bar', showAvg:true, showHol:true };
 function setCmpQuick(key){
   var r = getQuickRange(key);
   document.getElementById('cmp-from').value = r[0];
   document.getElementById('cmp-to').value = r[1];
-  renderCmpChart();
+  renderCmpChartDebounced();
 }
 function setCmpPeriod(p){
   cmpState.period = p;
@@ -5190,7 +6320,17 @@ function setCmpPeriod(p){
     var el = document.getElementById('cmp-p-'+k);
     if(el) el.className = k===p ? 'ctrl-btn green' : 'ctrl-btn';
   });
-  renderCmpChart();
+  // Switch the from/to inputs to the right control BEFORE the segment writes
+  // its range values, so the values land in a matching input type.
+  setRangeInputType('cmp', p);
+  applySegmentForPeriod('cmp-segment', p, function(slot){
+    var r = getQuickRangeForPeriod(p, slot);
+    // Fit the range to the input granularity so a month/year control accepts it
+    // (a <input type=month> silently rejects "2026-01-01").
+    document.getElementById('cmp-from').value = _fitRangeToPeriod(r[0], p);
+    document.getElementById('cmp-to').value   = _fitRangeToPeriod(r[1], p);
+  });
+  renderCmpChartDebounced();
 }
 function setCmpType(t){
   cmpState.type = t;
@@ -5198,13 +6338,24 @@ function setCmpType(t){
     var el = document.getElementById('cmp-t-'+k);
     if(el) el.className = k===t ? 'ctrl-btn green' : 'ctrl-btn';
   });
-  renderCmpChart();
+  renderCmpChartDebounced();
 }
-function toggleCmpOpt(){
+function toggleCmpOpt(opt){
+  // The button already passed 'avg' as an argument; this just never had a
+  // parameter to receive it, so every call silently toggled showAvg
+  // regardless of which button was clicked. Harmless while there was only
+  // one option — not once a second (hol) button exists.
+  if(opt==='hol'){
+    cmpState.showHol = !cmpState.showHol;
+    var elH = document.getElementById('cmp-hol');
+    if(elH) elH.className = cmpState.showHol ? 'ctrl-btn on' : 'ctrl-btn';
+    renderCmpChartDebounced();
+    return;
+  }
   cmpState.showAvg = !cmpState.showAvg;
   var el = document.getElementById('cmp-avg');
   if(el) el.className = cmpState.showAvg ? 'ctrl-btn on' : 'ctrl-btn';
-  renderCmpChart();
+  renderCmpChartDebounced();
 }
 
 let cmpReqId = 0;
@@ -5227,7 +6378,17 @@ function _cmpFillPeriods(allPeriods, fromVal, toVal, period){
   }
   var startM = (fromVal ? fromVal.slice(0,7) : (allPeriods[0]||'').slice(0,7));
   var endM   = (toVal   ? toVal.slice(0,7)   : (allPeriods[allPeriods.length-1]||'').slice(0,7));
-  if(!startM || !endM) return allPeriods.slice();
+  /* Fill every month in the SELECTED range, even months with no data — so
+     "this year" shows Jan–Dec of this year and "last year" shows Jan–Dec of
+     last year (all empty if there were no readings) instead of silently
+     collapsing to whatever data exists. The selected range (fromVal/toVal)
+     is the source of truth here, never allPeriods, which is why picking a year
+     with no data no longer falls back to showing the current year. */
+  if(!startM || !endM){
+    if(!allPeriods.length) return [];
+    startM = startM || allPeriods[0].slice(0,7);
+    endM   = endM   || allPeriods[allPeriods.length-1].slice(0,7);
+  }
   var sp = startM.split('-').map(Number);
   var ep = endM.split('-').map(Number);
   var out2 = [];
@@ -5240,6 +6401,32 @@ function _cmpFillPeriods(allPeriods, fromVal, toVal, period){
   return out2;
 }
 
+/* Defaults the group-comparison range to the current calendar month — the 1st
+   through the last day, even on the 1st itself, rather than "30 days back
+   from today" which used to spill into the previous month's data every time
+   the month was young. Only fills in blanks: a range the person picked by
+   hand is never overwritten. */
+function initCmpPickers(){
+  var fromEl = document.getElementById('cmp-from');
+  var toEl   = document.getElementById('cmp-to');
+  if(!fromEl || !toEl) return;
+  var now = new Date();
+  var first = new Date(now.getFullYear(), now.getMonth(), 1);
+  var last  = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  if(!fromEl.value) fromEl.value = ymdLocal(first);
+  if(!toEl.value)   toEl.value   = ymdLocal(last);
+  // Light the segment that matches the default range (this month) so the
+  // control's highlight agrees with what the chart is actually showing.
+  var seg = document.getElementById('cmp-segment');
+  if(seg){
+    var active = seg.querySelector('button.on');
+    if(!active){
+      var thisM = seg.querySelector('button[data-slot="0"]');
+      if(thisM) thisM.classList.add('on');
+    }
+  }
+}
+
 async function renderCmpChart(){
   var thisReq = ++cmpReqId;
   var groupKey = document.getElementById('cmp-group').value;
@@ -5247,11 +6434,11 @@ async function renderCmpChart(){
   var sumEl = document.getElementById('cmp-chart-summary');
   if(!groupKey){ el.innerHTML='<div class="section-empty">เลือกกลุ่ม</div>'; return; }
   var ids = getColIds(groupKey);
-  var fromVal = document.getElementById('cmp-from').value || null;
-  var toVal = document.getElementById('cmp-to').value || null;
+  var fromVal = _normRangeStart(document.getElementById('cmp-from').value || '') || null;
+  var toVal = _normRangeEnd(document.getElementById('cmp-to').value || '') || null;
   var TC = getThemeColors();
   var MN = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  el.innerHTML='<div class="section-empty">⏳ กำลังคำนวณ...</div>';
+  el.innerHTML = chartSkeletonHTML();
   try{
     var gran = cmpState.period === 'day' ? 'day' : 'month';
     var apiToVal = toVal;
@@ -5266,7 +6453,7 @@ async function renderCmpChart(){
     var raw = res.summary || [];
     var meterMap = {};
     raw.forEach(function(r){ if(!meterMap[r.meterId]) meterMap[r.meterId]={}; meterMap[r.meterId][r.period]={firstKwh:r.firstKwh,lastKwh:r.lastKwh}; });
-    var allPeriods = []; raw.forEach(function(r){ if(allPeriods.indexOf(r.period)<0) allPeriods.push(r.period); }); allPeriods.sort();
+    var allPeriods = Array.from(new Set(raw.map(function(r){ return r.period; }))).sort();   // Set, not indexOf: O(rows) instead of O(rows × periods)
     var dataPoints;
     if(cmpState.period === 'year'){
       var displayPeriods = allPeriods.filter(function(p){
@@ -5276,89 +6463,37 @@ async function renderCmpChart(){
       });
       var byYear = {};
       displayPeriods.forEach(function(p){ ids.forEach(function(id){ if(!_countsTowardEnergy(id)) return; var u=meterUsedOnDay(meterMap,id,p,allPeriods); if(u!==null) byYear[p.slice(0,4)]=(byYear[p.slice(0,4)]||0)+u; }); });
-      dataPoints = Object.entries(byYear).map(function(e){return {label:e[0],value:e[1]};});
+      dataPoints = Object.entries(byYear).map(function(e){return {label:e[0],value:e[1],hasData:true};});
     } else {
-      var valByPeriod = {};
+      var valByPeriod = {}, hasByPeriod = {};
       allPeriods.forEach(function(p){
         var total=0, has=false;
         ids.forEach(function(id){ if(!_countsTowardEnergy(id)) return; var u=meterUsedOnDay(meterMap,id,p,allPeriods); if(u!==null){total+=u;has=true;} });
         valByPeriod[p] = has ? total : 0;
+        hasByPeriod[p] = has;
       });
       var fullPeriods = _cmpFillPeriods(allPeriods, fromVal, toVal, cmpState.period);
       dataPoints = fullPeriods.map(function(p){
         var label;
         if(cmpState.period==='day') label=parseInt(p.split('-')[2])+'/'+parseInt(p.split('-')[1]);
         else label=MN[parseInt(p.split('-')[1])]+' '+p.slice(0,4);
-        return { label:label, value:valByPeriod[p]||0, hol:(cmpState.period==='day' && getDayType(p)==='holiday') };
+        // hasData: this period actually had a reading (a filled-in gap from
+        // _cmpFillPeriods, or a future day in a this-month range, is false) so
+        // the average in buildChartOpts divides by real days only.
+        return { label:label, value:valByPeriod[p]||0, hol:(cmpState.period==='day' && getDayType(p)==='holiday'), hasData: !!hasByPeriod[p] };
       });
     }
     if(!dataPoints.length){ el.innerHTML='<div class="section-empty">ไม่มีข้อมูล</div>'; return; }
-    var total = dataPoints.reduce(function(a,d){return a+d.value;},0);
-    var avg = dataPoints.length ? total/dataPoints.length : 0;
-    var pl = cmpState.period==='day'?'วัน':cmpState.period==='month'?'เดือน':'ปี';
-    var cmpAvgWork = 0, cmpAvgHol = 0, cmpNWork = 0, cmpNHol = 0;
-    if(cmpState.period === 'day'){
-      var cSumW = 0, cSumH = 0;
-      dataPoints.forEach(function(d){
-        if(d.hol){ cSumH += d.value; cmpNHol++; }
-        else { cSumW += d.value; cmpNWork++; }
-      });
-      cmpAvgWork = cmpNWork ? cSumW/cmpNWork : 0;
-      cmpAvgHol  = cmpNHol  ? cSumH/cmpNHol  : 0;
-    }
-    var values = dataPoints.map(function(d){return Math.round(d.value);});
-    var labels = dataPoints.map(function(d){return d.label;});
-    var series = [{ name:UNIT_WORD+' ('+UNIT+'/'+pl+')', data:values }];
-    var chartColors = [TC.accent];
-    var strokeW = cmpState.type==='bar' ? [0] : [2.5];
-    var strokeDash = [0];
-    if(cmpState.showAvg){
-      var cmpAvgLine = Math.round(cmpState.period === 'day' ? cmpAvgWork : avg);
-      series.push({ name:'ค่าเฉลี่ย', data:dataPoints.map(function(){return cmpAvgLine;}), type:'line' });
-      chartColors.push(TC.orange+'77');
-      strokeW = cmpState.type==='bar' ? [0,2] : [2.5,2]; strokeDash = [0,5];
-    }
-    var opts = {
-      chart:{ type:cmpState.type==='bar'?'bar':'line', height:340, fontFamily:'IBM Plex Mono,monospace', foreColor:TC.text2,
-        toolbar:{ show:true, tools:{download:true,zoom:true,zoomin:true,zoomout:true,pan:true,reset:true} },
-        background:'transparent', animations:{enabled:true,speed:400} },
-      series: series,
-      /* A month of daily bars is 31 labels in the width of a phone. Rather than
-         shrinking or rotating them into illegibility, only every Nth date is
-         drawn — the bars still show every day, the axis just stops trying to
-         name all of them. */
-      xaxis:{ categories:labels, axisBorder:{color:TC.border}, axisTicks:{show:false},
-              tickAmount: Math.min(labels.length, 8),
-              labels:{ rotate:0, rotateAlways:false, hideOverlappingLabels:true, trim:false,
-                       style:{fontSize:'11px',colors:TC.text2} } },
-      yaxis:{ title:{ text: UNIT, style:{fontSize:'12px', fontWeight:700, color:TC.text2} },
-              labels:{style:{fontSize:'12px',colors:TC.text2}, formatter:function(v){return Math.round(v).toLocaleString();}}, axisBorder:{show:false} },
-      grid:{ borderColor:TC.border, strokeDashArray:3, xaxis:{lines:{show:false}}, yaxis:{lines:{show:true}} },
-      tooltip:{ theme:TC.isDark?'dark':'light', style:{fontSize:'12px'}, y:{formatter:function(v){return v!=null?Math.round(v).toLocaleString()+' '+UNIT:'—';}} },
-      colors: chartColors,
-      responsive:[{ breakpoint:640, options:{ chart:{height:300}, xaxis:{labels:{rotate:-45, rotateAlways:true, hideOverlappingLabels:true, style:{fontSize:'8px'}}}, plotOptions:{bar:{columnWidth:'80%'}} } }],
-      plotOptions:{ bar:{borderRadius:4,columnWidth:'70%'} },
-      stroke:{ width:strokeW, dashArray:strokeDash },
-      fill:{ opacity:cmpState.type==='bar'?0.6:0.7 },
-      legend:{ fontSize:'11px', labels:{colors:TC.text2}, markers:{shape:'square',size:6} },
-      dataLabels:{ enabled:false },
-      states:{ hover:{filter:{type:'lighten',value:0.08}} }
-    };
+    var TC = getThemeColors();
+    var built = buildChartOpts(dataPoints, cmpState, TC);
     await ensureApex();
     if(thisReq !== cmpReqId) return;
     safeDestroyChart(cmpChartInst);
     el.innerHTML = '';
-    cmpChartInst = new ApexCharts(el, opts);
+    cmpChartInst = new ApexCharts(el, built.chartOpts);
     cmpChartInst.render();
-    var cmpAvgChips;
-    if(cmpState.period === 'day' && (cmpNWork || cmpNHol)){
-      cmpAvgChips = '<span class="chip chip-green">เฉลี่ยวันทำงาน '+Math.round(cmpAvgWork).toLocaleString()+' '+UNIT+' ('+cmpNWork+' วัน)</span> '+
-                    '<span class="chip" style="background:rgba(251,146,60,.15);color:var(--orange);border:1px solid rgba(251,146,60,.4)">เฉลี่ยวันหยุด '+Math.round(cmpAvgHol).toLocaleString()+' '+UNIT+' ('+cmpNHol+' วัน)</span>';
-    } else {
-      cmpAvgChips = '<span class="chip chip-green">เฉลี่ย '+Math.round(avg).toLocaleString()+' '+UNIT+'/'+pl+'</span>';
-    }
-    sumEl.innerHTML = '<span class="chip chip-green">'+UNIT_ICON+' รวม '+Math.round(total).toLocaleString()+' kWh</span> ' + cmpAvgChips;
-  }catch(e){ el.innerHTML='<div class="warn-box">❌ '+e.message+'</div>'; }
+    sumEl.innerHTML = built.summaryHtml;
+  }catch(e){ el.innerHTML='<div class="warn-box">❌ '+esc(e.message)+'</div>'; }
 }
 
 
@@ -5448,8 +6583,8 @@ function rdShowAdmin(){
   const title = document.getElementById('rd-login-title');
   const sub = document.getElementById('rd-login-subtitle');
   if (tag)   tag.textContent   = 'Admin access';
-  if (title) title.textContent = 'Administrator sign-in';
-  if (sub)   sub.textContent   = 'สำหรับผู้ดูแลระบบ / ทีม IT';
+  if (title) title.textContent = 'System Administrator sign-in';
+  if (sub)   sub.textContent   = 'จัดการมิเตอร์และตั้งค่าระบบ';
 }
 function rdShowRecorder(){
   showRecorderLogin();
@@ -5457,7 +6592,7 @@ function rdShowRecorder(){
   const title = document.getElementById('rd-login-title');
   const sub = document.getElementById('rd-login-subtitle');
   if (tag)   tag.textContent   = 'Recorder access';
-  if (title) title.textContent = 'Sign in to log readings';
+  if (title) title.textContent = 'Sign in to Input Records';
   if (sub)   sub.textContent   = 'กรอกรหัสผ่านทีมจดมิเตอร์เพื่อเริ่มบันทึกค่า';
 }
 function rdShowViewer(){
@@ -5466,8 +6601,8 @@ function rdShowViewer(){
   const title = document.getElementById('rd-login-title');
   const sub = document.getElementById('rd-login-subtitle');
   if (tag)   tag.textContent   = 'Report viewer';
-  if (title) title.textContent = 'Sign in to view reports';
-  if (sub)   sub.textContent   = 'สำหรับผู้บริหาร / ผู้ที่มาดูรายงานการใช้พลังงาน';
+  if (title) title.textContent = 'Sign in to view Reports & Analytics';
+  if (sub)   sub.textContent   = 'ดูรายงานและแนวโน้มการใช้พลังงาน';
 }
 // Keyboard: Enter in recorder passcode → submit
 document.addEventListener('DOMContentLoaded', () => {
@@ -5506,7 +6641,7 @@ function rdApplySearch(q){
   let visible = 0;
   cards.forEach(card => {
     if (!query) { card.style.display = ''; visible++; return; }
-    const text = card.textContent.toLowerCase();
+    const text = card.dataset.search || card.textContent.toLowerCase();
     const show = text.includes(query);
     card.style.display = show ? '' : 'none';
     if (show) visible++;
@@ -5522,24 +6657,25 @@ function rdOpenFirstMatch(){
     .find(c => c.style.display !== 'none');
   if (first) first.click();
 }
-// Sync sync-dot status class from existing sync logic (poll)
-// The original code sets background-color; we mirror it as class for the new dot.
-setInterval(() => {
-  const dot = document.getElementById('sync-dot');
-  if (!dot) return;
-  const bg = getComputedStyle(dot).backgroundColor;
-  dot.classList.remove('ok','working','err');
-  // heuristic: existing app uses green/orange/red; classify by hue
-  const m = bg.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
-  if (!m) return;
-  const [_, r, g, b] = m.map(Number);
-  if (g > r && g > b) dot.classList.add('ok');
-  else if (r > 200 && g > 100 && b < 100) dot.classList.add('working');
-  else if (r > 200 && g < 100) dot.classList.add('err');
-}, 500);
 
-function onTabSummary(){ buildMonthOptions(); populateZoneReportSelect(); loadReport(); loadZoneReport(); }
-function onTabCost(){ buildCostMonthOptions(); loadTariffs().then(() => { renderTariffForms(); loadCostData(); }); }
+async function onTabSummary(){
+  // Load the month list from the server first — the summary tab no longer
+  // loads the full records array, so buildMonthOptions has nothing to build the
+  // dropdown from until availableMonths arrives. Without the await the month
+  // picker rendered empty ("ไม่มีข้อมูล") on first open.
+  if(!availableMonths) await loadAvailableMonths();
+  buildMonthOptions(); populateZoneReportSelect(); loadReport(); loadZoneReport();
+}
+async function onTabCost(){
+  // Rate editing is admin-only on the server (saveTariff); hide the editor for
+  // viewers instead of showing a save button that can only fail.
+  const tc = document.getElementById('tariff-card');
+  if(tc) tc.style.display = appMode === 'admin' ? '' : 'none';
+  // Same as onTabSummary: ensure the month list is loaded before building the
+  // cost month dropdown, which reads availableMonths (records aren't loaded here).
+  if(!availableMonths) await loadAvailableMonths();
+  buildCostMonthOptions(); loadTariffs().then(() => { renderTariffForms(); loadCostData(); });
+}
 init();</script>
 </body>
 </html>
