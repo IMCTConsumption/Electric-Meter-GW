@@ -4503,6 +4503,41 @@ window.addEventListener('beforeunload', function(e){
    ════════════════════════════════════════════════════════════ */
 const METER_SHEET_CHUNK = 4; // meters per output sheet
 
+/* Used by the Excel builders below. They were referenced but never defined in
+   this build, so "Export Excel (รูปแบบเต็ม)" failed with a ReferenceError. */
+// 1-based column number → Excel column letters (1 → A, 26 → Z, 27 → AA).
+function colLetter(n){
+  let s = '';
+  while(n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+const TH_MONTH_FULL = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const EN_MONTH_FULL = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+
+/* Per-meter sheet detail for one day: the day's first reading (meter), the
+   register difference to the next usable reading before the multiplier (kwh)
+   and that difference × multiplier (cost — the same figure as "used"
+   elsewhere). Also referenced but missing from this build. Follows the same
+   rules as meterUsedOnDay so the meter sheets agree with the Data sheet:
+   unusable (zero) readings are skipped, and a demand / snapshot meter has a
+   reading but no consumption. */
+function meterDetailOnDay(meterMap, meterId, dateStr, allDates){
+  const cur = meterMap[meterId]?.[dateStr];
+  if(!cur) return null;
+  const sub = subById(meterId);
+  const vt  = meterValueType(sub);
+  if(!_isUsableReading(meterId, cur.firstKwh) || vt === 'demand' || vt === 'snapshot') return { meter: cur.firstKwh, kwh: null, cost: null };
+  const mult = sub?.multiplier !== undefined ? parseFloat(sub.multiplier) : 1;
+  const idx  = _dateIndex(allDates, dateStr);
+  let raw = null;
+  for(let k = idx + 1; k < allDates.length; k++){
+    const next = meterMap[meterId]?.[allDates[k]];
+    if(next && _isUsableReading(meterId, next.firstKwh)){ raw = Math.max(0, next.firstKwh - cur.firstKwh); break; }
+  }
+  if(raw === null) raw = Math.max(0, cur.lastKwh - cur.firstKwh);
+  return { meter: cur.firstKwh, kwh: raw, cost: raw * mult };
+}
+
 function ensureExcelJS(){
   return (typeof ExcelJS !== 'undefined') ? Promise.resolve() : loadScript(CDN.exceljs);
 }
@@ -4527,8 +4562,11 @@ async function buildDataSheetExcelJS(workbook, rc){
   const mainStart    = 2, mainEnd = mainStart + mainCols.length - 1;   // B..J
   const utilStart    = mainEnd + 1;                       // K
   const utilEnd      = utilStart + utilCols.length - 1;   // U
-  const utilMergeEnd = utilStart + 8;                     // S — merge 'UTILITY' ครอบแค่ 9 คอลัมน์แรก
-  const glanceStart  = utilMergeEnd + 1;                  // T
+  // The original file has 9 main and 11 util groups; these keep its exact
+  // layout for that case and stay valid for any other count (fewer util groups
+  // used to make the merges overlap — "Cannot merge already merged cells").
+  const utilMergeEnd = Math.min(utilStart + 8, utilEnd);  // S — merge 'UTILITY' ครอบแค่ 9 คอลัมน์แรก
+  const glanceStart  = utilMergeEnd + 1;                  // T (exists only with more than 9 util groups)
   const V = utilEnd + 1;   // UTILITY PLANT              // V
   const W = V + 1;         // TOTAL                       // W
   const X = W + 1;         // spacer ว่างเปล่า (มีในต้นฉบับ)  // X
@@ -4590,11 +4628,16 @@ async function buildDataSheetExcelJS(workbook, rc){
   // ══ แถว 2-3 — หัวตารางกลุ่ม ══
   ws.mergeCells(2,DATE_COL,3,DATE_COL); setCell(2,DATE_COL,'DATE',F_HEAD2,GRID,CENTER);
   mainCols.forEach((c,i) => { const col = mainStart+i; ws.mergeCells(2,col,3,col); setCell(2,col,c.name,F_HEAD2,GRID,CENTER); });
-  ws.mergeCells(2, utilStart, 2, utilMergeEnd); setCell(2, utilStart, 'UTILITY', F_HEAD_SM, GRID, CENTER);
+  if(utilCols.length){
+    if(utilMergeEnd > utilStart) ws.mergeCells(2, utilStart, 2, utilMergeEnd);
+    setCell(2, utilStart, 'UTILITY', F_HEAD_SM, GRID, CENTER);
+  }
   utilCols.forEach((c,i) => { setCell(3, utilStart+i, c.name, F_HEAD3, GRID, CENTER); });
   // T2:U2 และ V2 = "แอบดูยอดรวม" แบบสด (มองเห็นตลอดเพราะ freeze panes อยู่แถว 5) — สูตรตรงกับต้นฉบับ
-  ws.mergeCells(2, glanceStart, 2, utilEnd);
-  setCell(2, glanceStart, { formula:`SUM(${colLetter(utilStart)}${totalRow}:${colLetter(utilEnd)}${totalRow})` }, F_HEAD_SM, GRID, CENTER, '#,##0');
+  if(glanceStart <= utilEnd){
+    if(utilEnd > glanceStart) ws.mergeCells(2, glanceStart, 2, utilEnd);
+    setCell(2, glanceStart, { formula:`SUM(${colLetter(utilStart)}${totalRow}:${colLetter(utilEnd)}${totalRow})` }, F_HEAD_SM, GRID, CENTER, '#,##0');
+  }
   setCell(2, V, { formula:`SUM(${colLetter(mainStart)}${totalRow}:${colLetter(utilEnd)}${totalRow})` }, F_HEAD_SM, GRID, CENTER, '#,##0');
   setCell(3, V, 'UTILITY  PLANT', F_HEAD3, GRID, CENTER);
   setCell(2, Z, 'ใส่ช่องวันหยุด H', F_ZCOL, AUXBORDER, CENTER);
@@ -4665,16 +4708,108 @@ async function buildDataSheetExcelJS(workbook, rc){
   return ws;
 }
 
+/* Data sheet for the section layout. Same look as the SR template (fonts,
+   double grid, units row, TOTAL / UNIT COST / COST / KWH/U' / B/U' rows, day
+   number and holiday flag) but its columns follow the sections: each
+   section's groups, then its subtotal, then TOTAL. The SR template's fixed
+   column letters only fit the main / utility layout, so it is not reused. */
+async function buildDataSheetBySectionExcelJS(workbook, rc){
+  const { month, rows, layout } = rc;
+  const [yy, mm] = month.split('-').map(Number);
+  const cols = layout.cols;
+  const ws = workbook.addWorksheet('Data', { views:[{ state:'frozen', xSplit:1, ySplit:4 }] });
+  const DATE_COL = 1, FIRST = 2;
+  const colOf = {}; cols.forEach((c, i) => { colOf[c.id] = FIRST + i; });
+  const TOT = colOf['TOTAL'], LAST_DATA = TOT - 1;
+  const IDX = TOT + 2, HOL = TOT + 3;
+  const DATA_FIRST_ROW = 5, dataLastRow = DATA_FIRST_ROW + rows.length - 1;
+  const totalRow = dataLastRow + 1, unitRow = totalRow + 1, costRow = unitRow + 1, kwhURow = costRow + 1, bURow = kwhURow + 1, noteRow = bURow + 1;
+
+  ws.getColumn(DATE_COL).width = 17.5;
+  for(let c = FIRST; c <= LAST_DATA; c++) ws.getColumn(c).width = 17.5;
+  ws.getColumn(TOT).width = 23.2; ws.getColumn(TOT + 1).width = 6; ws.getColumn(IDX).width = 8.5; ws.getColumn(HOL).width = 20;
+
+  const F_TITLE = { name:'AngsanaUPC', size:36, bold:true }, F_HEAD2 = { name:'AngsanaUPC', size:24 }, F_HEAD3 = { name:'AngsanaUPC', size:20 };
+  const F_UNITROW = { name:'AngsanaUPC', size:22 }, F_UNITBOLD = { name:'AngsanaUPC', size:24, bold:true }, F_TOTALLBL = { name:'AngsanaUPC', size:36 };
+  const F_DATECOL = { name:'AngsanaUPC', size:26 }, F_VALUE = { name:'AngsanaUPC', size:36 }, F_WCOL = { name:'Arial', size:18 };
+  const F_ROWLBL = { name:'AngsanaUPC', size:22 }, F_SUMVAL = { name:'AngsanaUPC', size:28 }, F_YCOL = { name:'Arial', size:10 }, F_ZCOL = { name:'Arial', size:22 };
+  const F_SUB = { name:'AngsanaUPC', size:36, bold:true }, RED = { argb:'FFFF0000' };
+  const CENTER = { horizontal:'center', vertical:'middle' };
+  const DBL = { style:'double' }, THIN = { style:'thin' };
+  const GRID = { top:DBL, bottom:DBL, left:DBL, right:DBL }, WBORDER = { top:THIN, bottom:THIN, left:DBL, right:THIN }, AUX = { top:THIN, bottom:THIN, left:THIN, right:THIN };
+  const SUBFILL = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFE2F0D9' } };
+  function setCell(r, c, value, font, border, align, numFmt, fill){
+    const cell = ws.getCell(r, c);
+    cell.value = value;
+    if(font) cell.font = font; if(border) cell.border = border; if(align) cell.alignment = align; if(numFmt) cell.numFmt = numFmt; if(fill) cell.fill = fill;
+    return cell;
+  }
+  const isSub = c => c >= FIRST && c <= LAST_DATA && cols[c - FIRST].kind === 'sub';
+
+  ws.mergeCells(1, DATE_COL, 1, TOT);
+  setCell(1, DATE_COL, `รายละเอียดปริมาณการใช้ไฟฟ้าแต่ละพื้นที่   ประจำเดือน ${TH_MONTH_FULL[mm]} ${yy}`, F_TITLE, { bottom:DBL }, CENTER);
+  ws.getRow(1).height = 48.75;
+
+  ws.mergeCells(2, DATE_COL, 3, DATE_COL); setCell(2, DATE_COL, 'DATE', F_HEAD2, GRID, CENTER);
+  let c0 = FIRST;
+  layout.sections.forEach(s => {
+    ws.mergeCells(2, c0, 2, c0 + s.size); setCell(2, c0, s.name, F_HEAD2, GRID, CENTER);
+    c0 += s.size + 1;
+  });
+  cols.forEach(col => { if(col.kind !== 'total') setCell(3, colOf[col.id], col.kind === 'sub' ? 'รวม' : col.name, F_HEAD3, GRID, CENTER, null, col.kind === 'sub' ? SUBFILL : null); });
+  ws.mergeCells(2, TOT, 3, TOT); setCell(2, TOT, 'TOTAL', F_TOTALLBL, WBORDER, CENTER);
+  setCell(2, HOL, 'ใส่ช่องวันหยุด H', F_ZCOL, AUX, CENTER);
+
+  setCell(4, DATE_COL, 1, F_UNITBOLD, GRID, CENTER, '#,##0');   // A4: units produced this month — entered by hand
+  for(let c = FIRST; c <= TOT; c++) setCell(4, c, '( KW-H. )', F_UNITROW, c === TOT ? WBORDER : GRID, CENTER);
+  setCell(4, HOL, 'วันหยุด', F_ZCOL, AUX, CENTER);
+
+  rows.forEach((row, i) => {
+    const r = DATA_FIRST_ROW + i;
+    const d = new Date(row.dateStr + 'T00:00:00');
+    setCell(r, DATE_COL, `${d.getDate()} ${EN_MONTH_FULL[d.getMonth() + 1]} ${String(d.getFullYear()).slice(-2)}`, F_DATECOL, GRID, CENTER);
+    cols.forEach(col => {
+      const v = row.cells[col.id];
+      const c = colOf[col.id];
+      if(col.kind === 'total') setCell(r, c, v === null ? null : Math.round(v), F_WCOL, WBORDER, null, '#,##0');
+      else setCell(r, c, v === null ? null : Math.round(v), col.kind === 'sub' ? F_SUB : F_VALUE, GRID, null, '#,##0', col.kind === 'sub' ? SUBFILL : null);
+    });
+    setCell(r, IDX, i + 1, F_YCOL, AUX, CENTER);
+    setCell(r, HOL, getDayType(row.dateStr) === 'holiday' ? 'H' : '', F_ZCOL, AUX, CENTER);
+  });
+
+  const L = c => colLetter(c);
+  setCell(totalRow, DATE_COL, 'TOTAL', F_ROWLBL, GRID, CENTER);
+  for(let c = FIRST; c <= TOT; c++) setCell(totalRow, c, { formula:`SUM(${L(c)}${DATA_FIRST_ROW}:${L(c)}${dataLastRow})` }, c === TOT ? F_WCOL : F_SUMVAL, c === TOT ? WBORDER : GRID, null, '#,##0', isSub(c) ? SUBFILL : null);
+  setCell(unitRow, DATE_COL, 'UNIT COST', F_ROWLBL, GRID, CENTER);
+  for(let c = FIRST; c <= TOT; c++) setCell(unitRow, c, null, { ...F_SUMVAL, color:RED }, c === TOT ? WBORDER : GRID, null, '#,##0.000');
+  setCell(costRow, DATE_COL, ' COST', F_ROWLBL, GRID, CENTER);
+  for(let c = FIRST; c <= TOT; c++) setCell(costRow, c, { formula:`${L(c)}${totalRow}*${L(c)}${unitRow}` }, c === TOT ? F_WCOL : F_SUMVAL, c === TOT ? WBORDER : GRID, null, '#,##0');
+  setCell(kwhURow, DATE_COL, "KWH/U'", F_ROWLBL, GRID, CENTER);
+  for(let c = FIRST; c <= TOT; c++) setCell(kwhURow, c, { formula:`${L(c)}${totalRow}/$A$4` }, c === TOT ? F_WCOL : F_SUMVAL, c === TOT ? WBORDER : GRID, null, '#,##0.00');
+  setCell(bURow, DATE_COL, "B/U'", F_ROWLBL, GRID, CENTER);
+  for(let c = FIRST; c <= TOT; c++) setCell(bURow, c, { formula:`${L(c)}${costRow}/$A$4` }, c === TOT ? F_WCOL : F_SUMVAL, c === TOT ? WBORDER : GRID, null, '#,##0.00');
+  setCell(noteRow, DATE_COL, 'UNIT COST : B/KWH', F_ROWLBL, null, null);
+  setCell(noteRow, 3, 'COST: B', F_ROWLBL, null, null);
+  for(let r = 2; r <= noteRow; r++) ws.getRow(r).height = (r >= unitRow && r <= bURow) ? 30 : 29.25;
+  return ws;
+}
+
 async function buildMeterSheetsExcelJS(workbook, month, lastDay, meterMap, allDates){
   const days = [];
   for(let d = 1; d <= lastDay; d++) days.push(`${month}-${String(d).padStart(2,'0')}`);
 
-  const grouped = {};
-  // build categories from reportGroups (universal schema — no hardcoded LOAD_CATEGORIES)
-  const _categories = reportGroups.map(g => ({ name: g.name, icon: g.icon || '📦' }));
-  _categories.push({ name: 'อื่นๆ', icon: '📦' });
-  _categories.forEach(c => grouped[c.name] = []);
-  subs.forEach(s => { const cat = zoneName(s.zone); if(!grouped[cat]) grouped[cat] = []; grouped[cat].push(s); });
+  // One sheet set per meter zone, titled by its group's name. Categories are the
+  // report groups (sheet order, each name once), then any zone that has no
+  // group of its own — e.g. UNASSIGNED — then "อื่นๆ" for meters with no zone.
+  // Before, a zone without a group was collected but never written, so those
+  // meters were silently missing from the export.
+  const grouped = {}, _categories = [];
+  const addCat = name => { if(!grouped[name]){ grouped[name] = []; _categories.push({ name }); } };
+  reportGroups.forEach(g => addCat(g.name));
+  subs.forEach(s => { const cat = zoneName(s.zone); addCat(cat); grouped[cat].push(s); });
+  const other = _categories.findIndex(c => c.name === 'อื่นๆ');
+  if(other >= 0) _categories.push(_categories.splice(other, 1)[0]);   // keep "อื่นๆ" last
 
   const usedNames = new Set(['Data']);
   function safeSheetName(base){
@@ -4743,11 +4878,11 @@ function buildOneMeterSheet(ws, meters, days, meterMap, allDates, month){
       ws.getCell(r, base).alignment = { horizontal:'center' };
       ws.getCell(r, base+1).value = det ? det.meter : null;
       ws.getCell(r, base+1).numFmt = '#,##0.####';
-      ws.getCell(r, base+2).value = det ? Math.round(det.kwh) : null;
+      ws.getCell(r, base+2).value = det && det.kwh !== null ? Math.round(det.kwh) : null;
       ws.getCell(r, base+2).numFmt = '#,##0';
-      ws.getCell(r, base+3).value = det ? Math.round(det.cost) : null;
+      ws.getCell(r, base+3).value = det && det.cost !== null ? Math.round(det.cost) : null;
       ws.getCell(r, base+3).numFmt = '#,##0';
-      if(det){ totalsPerMeter[i].kwh += det.kwh; totalsPerMeter[i].cost += det.cost; }
+      if(det && det.kwh !== null){ totalsPerMeter[i].kwh += det.kwh; totalsPerMeter[i].cost += det.cost; }
     });
     r++;
   });
@@ -4778,6 +4913,26 @@ let zoneReportReqId     = 0;
 
 function reportGroupsMain(){ return reportGroups.filter(g => g.type === 'main'); }
 function reportGroupsUtil(){ return reportGroups.filter(g => g.type === 'util'); }
+
+/* Report sections — column H (`section`) of _REPORT_GROUPS. A group with a
+   section value belongs to that section; sections come in the order their
+   first group appears in the sheet, and groups keep sheet order inside a
+   section. When ANY group has a section, the monthly report is laid out by
+   section (each section's groups, then its subtotal; TOTAL = every sectioned
+   group) and groups without a section are left out of that table. When no
+   group has one — the SR sheets — the report keeps its main / utility layout.
+   Column ids are the group's position ('g' + index), not its key: a sheet can
+   hold two rows with the same key, and keying by it would merge their cells. */
+function reportSections(){
+  const order = [], by = {};
+  reportGroups.forEach((g, i) => {
+    const name = String(g.section || '').trim();
+    if(!name) return;
+    if(!by[name]){ by[name] = { name, groups: [] }; order.push(by[name]); }
+    by[name].groups.push({ id: 'g' + i, group: g });
+  });
+  return order;
+}
 
 
 function sumGroupOnDay(meterMap, col, dateStr, allDates){
@@ -4874,6 +5029,9 @@ function renderReport(month, lastDay){
   const days = [];
   for(let d = 1; d <= lastDay; d++) days.push(`${month}-${String(d).padStart(2,'0')}`);
 
+  const _sections = reportSections();
+  if(_sections.length){ _renderReportBySection(area, month, days, meterMap, allDates, _sections); return; }
+
   const _plRows = perfLabel('renderReport:rowsCompute'); perfStart(_plRows);
   const rows = days.map(dateStr => {
     const cells = {};
@@ -4893,7 +5051,7 @@ function renderReport(month, lastDay){
     totals[k] = rows.reduce((a,r) => a + (r.cells[k]||0), 0);
   });
   perfEnd(_plRows);
-  reportComputed = { month, rows, totals };
+  reportComputed = { month, rows, totals, layout: { mode: 'mainutil' } };
 
   const fmtCell = v => v === null ? '<span style="color:var(--text-3)">—</span>' : Math.round(v).toLocaleString();
   const MN = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
@@ -4939,6 +5097,79 @@ function renderReport(month, lastDay){
       </table>
     </div>
     <div style="margin-top:6px;font-size:10px;color:var(--text-3)">หน่วย: kWh · — = ไม่มีข้อมูล · UTILITY PLANT = รวม AC→Boiler · TOTAL = group หลัก + utility</div>`;
+  buildCompareGroupOptions();
+}
+
+/* ── monthly report laid out by section (see reportSections) ── */
+function _reportSectionCols(sections){
+  const cols = [];
+  sections.forEach((s, si) => {
+    s.groups.forEach(x => cols.push({ id: x.id, name: x.group.name, kind: 'group', section: si, group: x.group }));
+    cols.push({ id: 'S' + si, name: 'รวม ' + s.name, kind: 'sub', section: si });
+  });
+  cols.push({ id: 'TOTAL', name: 'TOTAL', kind: 'total' });
+  return cols;
+}
+function _renderReportBySection(area, month, days, meterMap, allDates, sections){
+  const cols = _reportSectionCols(sections);
+  const rows = days.map(dateStr => {
+    const cells = {};
+    let tot = 0, totHas = false;
+    sections.forEach((s, si) => {
+      let sub = 0, has = false;
+      s.groups.forEach(x => {
+        const v = sumGroupOnDay(meterMap, x.group, dateStr, allDates);
+        cells[x.id] = v;
+        if(v !== null){ sub += v; has = true; }
+      });
+      cells['S' + si] = has ? sub : null;
+      if(has){ tot += sub; totHas = true; }
+    });
+    cells['TOTAL'] = totHas ? tot : null;
+    return { dateStr, cells };
+  });
+  const totals = {};
+  cols.forEach(c => { totals[c.id] = rows.reduce((a, r) => a + (r.cells[c.id] || 0), 0); });
+  reportComputed = { month, rows, totals, layout: { mode: 'section', sections: sections.map(s => ({ name: s.name, size: s.groups.length })), cols } };
+
+  const fmtCell = v => v === null ? '<span style="color:var(--text-3)">—</span>' : Math.round(v).toLocaleString();
+  const MN = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const [yy, mm] = month.split('-');
+  const cellStyle = c => c.kind === 'sub'   ? 'font-weight:700;color:var(--green);background:var(--green-dim)'
+                       : c.kind === 'total' ? 'font-weight:700;color:var(--accent)' : '';
+  const secBorder = c => (c.kind === 'group' && sections[c.section].groups[0].id === c.id) ? 'border-left:2px solid var(--border);' : '';
+  const dataCols = cols.filter(c => c.kind !== 'total');
+  const head1 = sections.map(s => `<th colspan="${s.groups.length + 1}" style="text-align:center;padding:6px 8px;border-left:2px solid var(--border)">${esc(s.name)}</th>`).join('');
+  const head2 = dataCols.map(c => `<th style="text-align:right;padding:6px 8px;min-width:64px;${secBorder(c)}${c.kind === 'sub' ? 'color:var(--green)' : ''}">${c.kind === 'sub' ? 'รวม' : esc(c.name)}</th>`).join('');
+  const bodyRows = rows.map(r => {
+    const dnum = parseInt(r.dateStr.split('-')[2]);
+    return `<tr>
+      <td style="padding:5px 8px;font-weight:600;color:var(--accent);position:sticky;left:0;background:var(--surface-1)">${dnum}/${parseInt(mm)}</td>
+      ${cols.map(c => `<td style="text-align:right;padding:5px 8px;${secBorder(c)}${cellStyle(c)}">${fmtCell(r.cells[c.id])}</td>`).join('')}
+    </tr>`;
+  }).join('');
+  const foot = cols.map(c => `<td style="text-align:right;padding:7px 8px;font-weight:700;${secBorder(c)}${cellStyle(c)}">${Math.round(totals[c.id]).toLocaleString()}</td>`).join('');
+
+  area.innerHTML = `
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px;text-align:center">รายละเอียดปริมาณการใช้ไฟฟ้าแต่ละพื้นที่ · ${MN[parseInt(mm)]} ${yy}</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap">
+        <thead>
+          <tr style="background:var(--surface-3)">
+            <th rowspan="2" style="padding:6px 8px;position:sticky;left:0;background:var(--surface-3);text-align:left">วันที่</th>
+            ${head1}
+            <th rowspan="2" style="text-align:right;padding:6px 8px;color:var(--accent);border-left:2px solid var(--border)">TOTAL</th>
+          </tr>
+          <tr style="background:var(--surface-3)">${head2}</tr>
+        </thead>
+        <tbody>${bodyRows}</tbody>
+        <tfoot><tr style="background:var(--surface-3);border-top:2px solid var(--border)">
+          <td style="padding:7px 8px;font-weight:700;position:sticky;left:0;background:var(--surface-3)">รวม</td>
+          ${foot}
+        </tr></tfoot>
+      </table>
+    </div>
+    <div style="margin-top:6px;font-size:10px;color:var(--text-3)">หน่วย: kWh · — = ไม่มีข้อมูล · รวม = ผลรวมกลุ่มในพื้นที่นั้น · TOTAL = ทุกพื้นที่ · กลุ่มที่ไม่ได้ระบุ section ไม่อยู่ในตารางนี้</div>`;
   buildCompareGroupOptions();
 }
 
@@ -5107,6 +5338,7 @@ async function exportReportExcel(){
   try{ await ensureXLSX(); }catch(e){ return toast('โหลด Excel library ไม่ได้','err'); }
   const { month, rows, totals } = reportComputed;
   const mm = parseInt(month.split('-')[1]);
+  if(reportComputed.layout && reportComputed.layout.mode === 'section') return _exportReportExcelBySection(reportComputed, mm);
   const aoa = [];
   const header = ['วันที่', ...reportGroupsMain().map(c=>c.name), 'UTILITY PLANT', ...reportGroupsUtil().map(c=>c.name), 'TOTAL'];
   aoa.push(header);
@@ -5128,6 +5360,35 @@ async function exportReportExcel(){
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   ws['!cols'] = header.map(()=>({wch:13}));
+  XLSX.utils.book_append_sheet(wb, ws, month);
+  XLSX.writeFile(wb, `Report_${month}.xlsx`);
+  toast('✅ Export รายงานแล้ว','ok');
+}
+
+/* Section layout: row 1 = section names over their columns, row 2 = column
+   names, then one row per day and a total row — the same table as on screen. */
+function _exportReportExcelBySection(rc, mm){
+  const { month, rows, totals, layout } = rc;
+  const cols = layout.cols;
+  const row1 = [''], row2 = ['วันที่'], merges = [];
+  let c = 1;
+  layout.sections.forEach(s => {
+    row1.push(s.name); for(let k = 0; k < s.size; k++) row1.push('');
+    merges.push({ s:{ r:0, c }, e:{ r:0, c: c + s.size } });
+    c += s.size + 1;
+  });
+  row1.push('');
+  cols.forEach(col => row2.push(col.kind === 'sub' ? col.name : col.name));
+  const aoa = [row1, row2];
+  rows.forEach(r => {
+    const dnum = parseInt(r.dateStr.split('-')[2]);
+    aoa.push([`${dnum}/${mm}`, ...cols.map(col => r.cells[col.id] === null ? '' : Math.round(r.cells[col.id]))]);
+  });
+  aoa.push(['รวม', ...cols.map(col => Math.round(totals[col.id]))]);
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!merges'] = merges;
+  ws['!cols'] = row2.map(() => ({ wch: 14 }));
   XLSX.utils.book_append_sheet(wb, ws, month);
   XLSX.writeFile(wb, `Report_${month}.xlsx`);
   toast('✅ Export รายงานแล้ว','ok');
@@ -5166,7 +5427,8 @@ async function exportFullTemplateExcel(){
     workbook.creator = SITE_NAME + ' ' + SITE_CODE + ' Plant Logger';
     workbook.created = new Date();
 
-    await buildDataSheetExcelJS(workbook, reportComputed);
+    if(reportComputed.layout && reportComputed.layout.mode === 'section') await buildDataSheetBySectionExcelJS(workbook, reportComputed);
+    else await buildDataSheetExcelJS(workbook, reportComputed);
     await buildMeterSheetsExcelJS(workbook, month, lastDay, meterMap, allDates);
 
     const buf  = await workbook.xlsx.writeBuffer();
